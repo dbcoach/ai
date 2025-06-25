@@ -6,19 +6,22 @@ DB.Coach is an AI-powered database design tool that helps you create comprehensi
 
 ## Features
 
-- **AI-Powered Database Design**: Describe your database needs in plain English and get professional-grade schemas
+- **AI-Powered Database Design**: Powered by Google's Gemini 1.5 Flash model for intelligent database design
 - **Multi-Database Support**: SQL, NoSQL, and VectorDB support
-- **Interactive Generation**: Watch the AI reasoning process in real-time
-- **Comprehensive Output**: 
+- **Real-time AI Reasoning**: Watch the AI work through your requirements step-by-step
+- **Progressive Generation**: 
   - Database schemas with proper relationships and indexes
-  - Sample data generation
-  - API endpoint documentation
-  - Database visualizations
+  - Realistic sample data that matches your business context
+  - Complete REST API endpoint documentation
+  - Database visualization descriptions
 - **Professional UI**: Modern, responsive interface with dark theme
+- **Error Handling**: Robust error handling with retry logic and user-friendly messages
 
 ## Tech Stack
 
 - **Frontend**: React 18 with TypeScript
+- **AI Integration**: Google Gemini 1.5 Flash API
+- **State Management**: React Context + useReducer
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
@@ -35,15 +38,40 @@ DB.Coach is an AI-powered database design tool that helps you create comprehensi
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/dbcoach/ai.git
 cd ai
 
 # Install dependencies
 npm install
 
+# Set up environment variables
+cp .env.example .env
+# Edit .env and add your Gemini API key
+
 # Start the development server
 npm run dev
 ```
+
+### API Key Setup
+
+1. Get your Gemini API key:
+   - Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - Create a new API key
+   - Copy the generated key
+
+2. Configure the environment:
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+   
+   # Add your API key to .env
+   VITE_GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+3. Start the application:
+   ```bash
+   npm run dev
+   ```
 
 ### Build for Production
 

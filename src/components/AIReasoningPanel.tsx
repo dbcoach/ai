@@ -1,22 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Bot, User, Zap, Database, Code, Eye } from 'lucide-react';
+import useGeneration from '../hooks/useGeneration';
 
-interface AIReasoningPanelProps {
-  prompt: string;
-  dbType: string;
-  isGenerating: boolean;
-}
-
-interface Message {
-  id: string;
-  type: 'ai' | 'user';
-  content: string;
-  timestamp: Date;
-  isThinking?: boolean;
-}
-
-const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({ prompt, dbType, isGenerating }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+const AIReasoningPanel: React.FC = () => {
+  const { reasoningMessages, isGenerating, getTabStatus } = useGeneration();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -25,75 +12,13 @@ const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({ prompt, dbType, isG
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    // Initial user message
-    setMessages([
-      {
-        id: '1',
-        type: 'user',
-        content: `Create a ${dbType} database: ${prompt}`,
-        timestamp: new Date(),
-      }
-    ]);
-
-    // Simulate AI reasoning messages
-    const aiMessages = [
-      {
-        content: "I'll analyze your requirements and design an optimal database structure.",
-        delay: 1000,
-      },
-      {
-        content: `For a ${dbType} database, I'm identifying the core entities and relationships...`,
-        delay: 2500,
-      },
-      {
-        content: "🔍 Analyzing entity relationships and determining optimal table structure",
-        delay: 4000,
-      },
-      {
-        content: "📊 Generating schema with proper indexing and constraints",
-        delay: 6000,
-      },
-      {
-        content: "🎯 Creating sample data that reflects real-world usage patterns",
-        delay: 8000,
-      },
-      {
-        content: "🔧 Building REST API endpoints for full CRUD operations",
-        delay: 10000,
-      },
-      {
-        content: "🎨 Preparing visual ER diagram for better understanding",
-        delay: 12000,
-      },
-      {
-        content: "✅ Database design complete! Review the generated schema and make any adjustments.",
-        delay: 14000,
-      },
-    ];
-
-    aiMessages.forEach((msg, index) => {
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: `ai-${index + 2}`,
-            type: 'ai',
-            content: msg.content,
-            timestamp: new Date(),
-          }
-        ]);
-      }, msg.delay);
-    });
-  }, [prompt, dbType]);
+  }, [reasoningMessages]);
 
   return (
     <div className="h-full flex flex-col">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.map((message) => (
+        {reasoningMessages.map((message) => (
           <div key={message.id} className="flex items-start space-x-3">
             <div className={`p-2 rounded-lg flex-shrink-0 ${
               message.type === 'ai' 
@@ -155,28 +80,45 @@ const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({ prompt, dbType, isG
           <h3 className="text-sm font-medium text-slate-300">Generation Progress</h3>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { icon: Database, label: 'Schema', completed: !isGenerating },
-              { icon: Eye, label: 'Sample Data', completed: !isGenerating },
-              { icon: Code, label: 'API Endpoints', completed: !isGenerating },
-              { icon: Zap, label: 'Visualization', completed: !isGenerating },
+              { icon: Database, label: 'Schema', step: 'schema' as const },
+              { icon: Eye, label: 'Sample Data', step: 'data' as const },
+              { icon: Code, label: 'API Endpoints', step: 'api' as const },
+              { icon: Zap, label: 'Visualization', step: 'visualization' as const },
             ].map((item, index) => {
               const Icon = item.icon;
+              const status = getTabStatus(item.step);
+              const isCompleted = status === 'completed';
+              const isGenerating = status === 'generating';
+              
               return (
                 <div key={index} className={`flex items-center space-x-2 p-2 rounded-lg ${
-                  item.completed 
+                  isCompleted
                     ? 'bg-green-500/20 border border-green-500/30' 
+                    : isGenerating
+                    ? 'bg-purple-500/20 border border-purple-500/30'
                     : 'bg-slate-700/30 border border-slate-600/30'
                 }`}>
                   <Icon className={`w-4 h-4 ${
-                    item.completed ? 'text-green-400' : 'text-slate-400'
+                    isCompleted 
+                      ? 'text-green-400' 
+                      : isGenerating 
+                      ? 'text-purple-400' 
+                      : 'text-slate-400'
                   }`} />
                   <span className={`text-xs ${
-                    item.completed ? 'text-green-300' : 'text-slate-400'
+                    isCompleted 
+                      ? 'text-green-300' 
+                      : isGenerating 
+                      ? 'text-purple-300' 
+                      : 'text-slate-400'
                   }`}>
                     {item.label}
                   </span>
-                  {item.completed && (
+                  {isCompleted && (
                     <div className="w-2 h-2 bg-green-400 rounded-full ml-auto"></div>
+                  )}
+                  {isGenerating && (
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse ml-auto"></div>
                   )}
                 </div>
               );

@@ -1,39 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Copy, Download, Eye, Code, Database, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Eye, Code, Database, Zap } from 'lucide-react';
 import AIReasoningPanel from './AIReasoningPanel';
 import SchemaTab from './tabs/SchemaTab';
 import SampleDataTab from './tabs/SampleDataTab';
 import APIEndpointsTab from './tabs/APIEndpointsTab';
 import VisualizationTab from './tabs/VisualizationTab';
+import useGeneration from '../hooks/useGeneration';
 
 interface GenerationViewProps {
-  prompt: string;
-  dbType: string;
   onBack: () => void;
 }
 
 type TabType = 'schema' | 'data' | 'api' | 'visualization';
 
-const GenerationView: React.FC<GenerationViewProps> = ({ prompt, dbType, onBack }) => {
+const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<TabType>('schema');
-  const [isGenerating, setIsGenerating] = useState(true);
-  const [generatedTabs, setGeneratedTabs] = useState<Set<TabType>>(new Set());
-
-  // Simulate generation process
-  useEffect(() => {
-    const generateTabs = async () => {
-      const tabs: TabType[] = ['schema', 'data', 'api', 'visualization'];
-      
-      for (let i = 0; i < tabs.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
-        setGeneratedTabs(prev => new Set([...prev, tabs[i]]));
-      }
-      
-      setIsGenerating(false);
-    };
-
-    generateTabs();
-  }, []);
+  const { 
+    isGenerating, 
+    prompt, 
+    dbType, 
+    getTabStatus
+  } = useGeneration();
 
   const tabs = [
     { id: 'schema' as TabType, label: 'Schema', icon: Database },
@@ -43,12 +30,16 @@ const GenerationView: React.FC<GenerationViewProps> = ({ prompt, dbType, onBack 
   ];
 
   const renderTabContent = () => {
-    if (!generatedTabs.has(activeTab)) {
+    const tabStatus = getTabStatus(activeTab);
+    
+    if (tabStatus === 'pending' || tabStatus === 'generating') {
       return (
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-400">Generating {tabs.find(t => t.id === activeTab)?.label}...</p>
+            <p className="text-slate-400">
+              {tabStatus === 'generating' ? 'Generating' : 'Waiting for'} {tabs.find(t => t.id === activeTab)?.label}...
+            </p>
           </div>
         </div>
       );
@@ -83,11 +74,7 @@ const GenerationView: React.FC<GenerationViewProps> = ({ prompt, dbType, onBack 
           <h2 className="text-xl font-semibold text-white">AI Reasoning</h2>
           <p className="text-slate-400 text-sm mt-1">Watch the AI design your database</p>
         </div>
-        <AIReasoningPanel 
-          prompt={prompt} 
-          dbType={dbType} 
-          isGenerating={isGenerating} 
-        />
+        <AIReasoningPanel />
       </div>
 
       {/* Results Panel - Right */}
@@ -114,26 +101,30 @@ const GenerationView: React.FC<GenerationViewProps> = ({ prompt, dbType, onBack 
         <div className="flex border-b border-slate-700/50 bg-slate-800/10 backdrop-blur-sm">
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isGenerated = generatedTabs.has(tab.id);
+            const tabStatus = getTabStatus(tab.id);
             const isActive = activeTab === tab.id;
+            const canClick = tabStatus === 'completed';
             
             return (
               <button
                 key={tab.id}
-                onClick={() => isGenerated && setActiveTab(tab.id)}
-                disabled={!isGenerated}
+                onClick={() => canClick && setActiveTab(tab.id)}
+                disabled={!canClick}
                 className={`flex items-center space-x-2 px-6 py-4 font-medium transition-all duration-200 border-b-2 ${
                   isActive
                     ? 'text-purple-400 border-purple-400 bg-slate-800/30'
-                    : isGenerated
+                    : canClick
                     ? 'text-slate-300 border-transparent hover:text-white hover:bg-slate-800/20'
                     : 'text-slate-500 border-transparent cursor-not-allowed opacity-50'
                 }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
-                {isGenerated && (
+                {tabStatus === 'completed' && (
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                )}
+                {tabStatus === 'generating' && (
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
                 )}
               </button>
             );
