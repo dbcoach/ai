@@ -64,7 +64,7 @@ const AnalysisTab: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto scrollbar-elegant p-6">
           <pre className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">
             {analysis.rawContent}
           </pre>
@@ -100,7 +100,7 @@ const AnalysisTab: React.FC = () => {
         </div>
       </div>
       
-      <div className="flex-1 overflow-auto p-6 space-y-6">
+      <div className="flex-1 overflow-auto scrollbar-elegant p-6 space-y-6">
         {/* Domain & Scale */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">

@@ -17,7 +17,9 @@ const AIReasoningPanel: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-elegant" style={{
+        scrollBehavior: 'smooth'
+      }}>
         {reasoningMessages.map((message) => (
           <div key={message.id} className="flex items-start space-x-3">
             <div className={`p-2 rounded-lg flex-shrink-0 ${
@@ -31,7 +33,7 @@ const AIReasoningPanel: React.FC = () => {
                 <User className="w-4 h-4 text-slate-400" />
               )}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className={`p-3 rounded-lg ${
                 message.type === 'ai'
                   ? 'bg-slate-700/30 border border-slate-600/30'
@@ -44,7 +46,7 @@ const AIReasoningPanel: React.FC = () => {
                     </div>
                   </div>
                 )}
-                <p className="text-slate-200 text-sm leading-relaxed">
+                <p className="text-slate-200 text-sm leading-relaxed break-words">
                   {message.content}
                 </p>
               </div>
@@ -66,7 +68,7 @@ const AIReasoningPanel: React.FC = () => {
             <div className="p-2 rounded-lg bg-purple-500/20 border border-purple-500/30 flex-shrink-0">
               <Bot className="w-4 h-4 text-purple-400" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/30">
                 <div className="flex items-center space-x-1">
                   <div className="flex space-x-1">
@@ -85,7 +87,7 @@ const AIReasoningPanel: React.FC = () => {
       </div>
 
       {/* Progress indicators */}
-      <div className="p-6 border-t border-slate-700/50 bg-slate-800/20">
+      <div className="flex-shrink-0 p-6 border-t border-slate-700/50 bg-slate-800/20">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-slate-300">Generation Progress</h3>
@@ -138,7 +140,7 @@ const AIReasoningPanel: React.FC = () => {
                           ? 'text-purple-400' 
                           : 'text-slate-400'
                       }`} />
-                      <span className={`text-xs ${
+                      <span className={`text-xs truncate ${
                         isCompleted 
                           ? 'text-green-300' 
                           : isActive 
@@ -148,10 +150,10 @@ const AIReasoningPanel: React.FC = () => {
                         {item.label}
                       </span>
                       {isCompleted && (
-                        <div className="w-2 h-2 bg-green-400 rounded-full ml-auto"></div>
+                        <div className="w-2 h-2 bg-green-400 rounded-full ml-auto flex-shrink-0"></div>
                       )}
                       {isActive && (
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse ml-auto"></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse ml-auto flex-shrink-0"></div>
                       )}
                     </div>
                   );
@@ -188,7 +190,7 @@ const AIReasoningPanel: React.FC = () => {
                         ? 'text-purple-400' 
                         : 'text-slate-400'
                     }`} />
-                    <span className={`text-xs ${
+                    <span className={`text-xs truncate ${
                       isCompleted 
                         ? 'text-green-300' 
                         : isGenerating 
@@ -198,10 +200,10 @@ const AIReasoningPanel: React.FC = () => {
                       {item.label}
                     </span>
                     {isCompleted && (
-                      <div className="w-2 h-2 bg-green-400 rounded-full ml-auto"></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full ml-auto flex-shrink-0"></div>
                     )}
                     {isGenerating && (
-                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse ml-auto"></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse ml-auto flex-shrink-0"></div>
                     )}
                   </div>
                 );

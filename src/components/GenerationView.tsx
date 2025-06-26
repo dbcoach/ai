@@ -64,10 +64,10 @@ const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex overflow-hidden">
       {/* AI Reasoning Panel - Left */}
-      <div className="w-2/5 border-r border-slate-700/50 bg-slate-800/20 backdrop-blur-sm">
-        <div className="p-6 border-b border-slate-700/50">
+      <div className="w-2/5 border-r border-slate-700/50 bg-slate-800/20 backdrop-blur-sm flex flex-col">
+        <div className="flex-shrink-0 p-6 border-b border-slate-700/50">
           <button
             onClick={onBack}
             className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors mb-4"
@@ -78,22 +78,24 @@ const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
           <h2 className="text-xl font-semibold text-white">AI Reasoning</h2>
           <p className="text-slate-400 text-sm mt-1">Watch the AI design your database</p>
         </div>
-        <AIReasoningPanel />
+        <div className="flex-1 min-h-0">
+          <AIReasoningPanel />
+        </div>
       </div>
 
       {/* Results Panel - Right */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="p-6 border-b border-slate-700/50 bg-slate-800/20 backdrop-blur-sm">
+        <div className="flex-shrink-0 p-6 border-b border-slate-700/50 bg-slate-800/20 backdrop-blur-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Database Design Results</h1>
-              <p className="text-slate-400 mt-1">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold text-white truncate">Database Design Results</h1>
+              <p className="text-slate-400 mt-1 truncate">
                 {dbType} database for: "{prompt}"
               </p>
             </div>
             {isGenerating && (
-              <div className="flex items-center space-x-2 text-purple-400">
+              <div className="flex items-center space-x-2 text-purple-400 flex-shrink-0 ml-4">
                 <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
                 <span className="text-sm">Generating...</span>
               </div>
@@ -102,7 +104,7 @@ const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
         </div>
 
         {/* Tabs Navigation */}
-        <div className="flex border-b border-slate-700/50 bg-slate-800/10 backdrop-blur-sm">
+        <div className="flex-shrink-0 flex border-b border-slate-700/50 bg-slate-800/10 backdrop-blur-sm overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const tabStatus = getTabStatus(tab.id);
@@ -114,7 +116,7 @@ const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
                 key={tab.id}
                 onClick={() => canClick && setActiveTab(tab.id)}
                 disabled={!canClick}
-                className={`flex items-center space-x-2 px-6 py-4 font-medium transition-all duration-200 border-b-2 ${
+                className={`flex items-center space-x-2 px-6 py-4 font-medium transition-all duration-200 border-b-2 whitespace-nowrap flex-shrink-0 ${
                   isActive
                     ? 'text-purple-400 border-purple-400 bg-slate-800/30'
                     : canClick
@@ -136,10 +138,44 @@ const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {renderTabContent()}
         </div>
       </div>
+      
+      {/* Custom Scrollbar Styles */}
+      <style jsx>{`
+        /* Webkit browsers */
+        :global(.scrollbar-elegant::-webkit-scrollbar) {
+          width: 8px;
+          height: 8px;
+        }
+        
+        :global(.scrollbar-elegant::-webkit-scrollbar-track) {
+          background: rgba(30, 41, 59, 0.3);
+          border-radius: 4px;
+        }
+        
+        :global(.scrollbar-elegant::-webkit-scrollbar-thumb) {
+          background: rgba(139, 92, 246, 0.4);
+          border-radius: 4px;
+          transition: background 0.2s ease;
+        }
+        
+        :global(.scrollbar-elegant::-webkit-scrollbar-thumb:hover) {
+          background: rgba(139, 92, 246, 0.6);
+        }
+        
+        :global(.scrollbar-elegant::-webkit-scrollbar-corner) {
+          background: rgba(30, 41, 59, 0.3);
+        }
+        
+        /* Firefox */
+        :global(.scrollbar-elegant) {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(139, 92, 246, 0.4) rgba(30, 41, 59, 0.3);
+        }
+      `}</style>
     </div>
   );
 };

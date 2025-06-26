@@ -262,7 +262,7 @@ const ValidationTab: React.FC = () => {
         </div>
 
         {/* Section Navigation */}
-        <div className="flex space-x-2 mt-4 overflow-x-auto">
+        <div className="flex space-x-2 mt-4 overflow-x-auto scrollbar-elegant">
           {sections.map((section) => {
             const Icon = section.icon;
             const isActive = selectedSection === section.id;
@@ -271,7 +271,7 @@ const ValidationTab: React.FC = () => {
               <button
                 key={section.id}
                 onClick={() => setSelectedSection(section.id)}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg whitespace-nowrap transition-colors flex-shrink-0 ${
                   isActive
                     ? 'bg-purple-600/30 text-purple-300 border border-purple-500/30'
                     : 'bg-slate-700/30 text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
@@ -285,7 +285,7 @@ const ValidationTab: React.FC = () => {
         </div>
       </div>
       
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto scrollbar-elegant p-6">
         {renderSectionContent()}
       </div>
     </div>
