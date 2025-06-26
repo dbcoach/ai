@@ -37,7 +37,10 @@ const AuthButton: React.FC = () => {
 
         {/* User dropdown menu */}
         {showUserMenu && (
-          <div className="absolute right-0 top-full mt-2 w-64 bg-slate-800 border border-slate-700/50 rounded-lg shadow-xl z-50">
+          <div 
+            className="absolute right-0 top-full mt-2 w-64 bg-slate-800 border border-slate-700/50 rounded-lg shadow-xl"
+            style={{ zIndex: 10000 }}
+          >
             <div className="p-4 border-b border-slate-700/50">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
@@ -78,7 +81,8 @@ const AuthButton: React.FC = () => {
         {/* Backdrop to close menu */}
         {showUserMenu && (
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0"
+            style={{ zIndex: 9999 }}
             onClick={() => setShowUserMenu(false)}
           />
         )}
