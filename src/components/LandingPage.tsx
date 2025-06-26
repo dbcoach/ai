@@ -213,7 +213,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                     ) : (
                       <>
                         <p className="font-medium mb-1">💡 Standard Features:</p>
-                        <p>Be specific about your use case. Mention entities, relationships, and any special requirements.</p>
+                        <p>Be specific about your use case. Mention entities, relationships, and any special requirements for the best results.</p>
                       </>
                     )}
                   </div>
