@@ -33,3 +33,137 @@
     background: rgba(30, 41, 59, 0.3);
   }
 }
+
+/* Flowing border animation */
+@keyframes flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes flowReverse {
+  0% {
+    background-position: 100% 50%;
+  }
+  50% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.flowing-border {
+  position: relative;
+  border-radius: 0.75rem;
+  padding: 2px;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(139, 92, 246, 0.1),
+    rgba(59, 130, 246, 0.1),
+    rgba(139, 92, 246, 0.1),
+    transparent,
+    transparent,
+    rgba(139, 92, 246, 0.1),
+    rgba(59, 130, 246, 0.1)
+  );
+  background-size: 400% 400%;
+  animation: flow 8s ease-in-out infinite;
+}
+
+.flowing-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  padding: 1px;
+  background: linear-gradient(
+    -45deg,
+    transparent,
+    rgba(59, 130, 246, 0.08),
+    rgba(139, 92, 246, 0.08),
+    rgba(59, 130, 246, 0.08),
+    transparent,
+    transparent,
+    rgba(59, 130, 246, 0.08),
+    rgba(139, 92, 246, 0.08)
+  );
+  background-size: 400% 400%;
+  animation: flowReverse 6s ease-in-out infinite;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  opacity: 0.6;
+}
+
+.flowing-border:hover {
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(139, 92, 246, 0.15),
+    rgba(59, 130, 246, 0.15),
+    rgba(139, 92, 246, 0.15),
+    transparent,
+    transparent,
+    rgba(139, 92, 246, 0.15),
+    rgba(59, 130, 246, 0.15)
+  );
+  background-size: 400% 400%;
+}
+
+.flowing-border:hover::before {
+  opacity: 0.8;
+  background: linear-gradient(
+    -45deg,
+    transparent,
+    rgba(59, 130, 246, 0.12),
+    rgba(139, 92, 246, 0.12),
+    rgba(59, 130, 246, 0.12),
+    transparent,
+    transparent,
+    rgba(59, 130, 246, 0.12),
+    rgba(139, 92, 246, 0.12)
+  );
+  background-size: 400% 400%;
+}
+
+.flowing-border-focused {
+  background: linear-gradient(
+    45deg,
+    rgba(139, 92, 246, 0.2),
+    rgba(59, 130, 246, 0.2),
+    rgba(139, 92, 246, 0.2),
+    rgba(59, 130, 246, 0.2),
+    rgba(139, 92, 246, 0.2),
+    rgba(59, 130, 246, 0.2),
+    rgba(139, 92, 246, 0.2),
+    rgba(59, 130, 246, 0.2)
+  );
+  background-size: 400% 400%;
+  animation: flow 4s ease-in-out infinite;
+}
+
+.flowing-border-focused::before {
+  opacity: 1;
+  background: linear-gradient(
+    -45deg,
+    rgba(59, 130, 246, 0.15),
+    rgba(139, 92, 246, 0.15),
+    rgba(59, 130, 246, 0.15),
+    rgba(139, 92, 246, 0.15),
+    rgba(59, 130, 246, 0.15),
+    rgba(139, 92, 246, 0.15),
+    rgba(59, 130, 246, 0.15),
+    rgba(139, 92, 246, 0.15)
+  );
+  background-size: 400% 400%;
+  animation: flowReverse 3s ease-in-out infinite;
+}

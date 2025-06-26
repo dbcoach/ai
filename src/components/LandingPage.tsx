@@ -12,6 +12,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
   const [mode, setMode] = useState<DBCoachMode>('dbcoach');
   const [isHovered, setIsHovered] = useState(false);
   const [isBrandHovered, setIsBrandHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,13 +105,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                       ))}
                     </div>
                   </div>
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
-                    className="w-full h-32 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed"
-                    required
-                  />
+                  
+                  {/* Flowing border wrapper */}
+                  <div className={`flowing-border transition-all duration-300 ${
+                    isFocused ? 'flowing-border-focused' : ''
+                  }`}>
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
+                      placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
+                      className="w-full h-32 p-4 bg-slate-700/30 border-0 rounded-xl text-white placeholder-slate-400 focus:outline-none transition-all duration-200 resize-none leading-relaxed"
+                      required
+                    />
+                  </div>
                 </div>
 
                 {/* DBCoach Mode Selector */}
