@@ -89,7 +89,7 @@ const AIReasoningPanel: React.FC = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-slate-300">Generation Progress</h3>
-            {state.mode === 'dbcoach' && (
+            {(state?.mode ?? 'standard') === 'dbcoach' && (
               <div className="flex items-center space-x-1">
                 <Bot className="w-3 h-3 text-purple-400" />
                 <span className="text-xs text-purple-300">DBCoach Pro</span>
@@ -97,19 +97,19 @@ const AIReasoningPanel: React.FC = () => {
             )}
           </div>
           
-          {state.mode === 'dbcoach' ? (
+          {(state?.mode ?? 'standard') === 'dbcoach' ? (
             // DBCoach mode - show multi-agent progress
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Step {state.progressStep} of {state.totalSteps}</span>
-                {state.currentAgent && (
+                <span>Step {state?.progressStep ?? 0} of {state?.totalSteps ?? 0}</span>
+                {state?.currentAgent && (
                   <span className="text-purple-300">🤖 {state.currentAgent}</span>
                 )}
               </div>
               <div className="w-full bg-slate-700/50 rounded-full h-2">
                 <div 
                   className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(state.progressStep / state.totalSteps) * 100}%` }}
+                  style={{ width: `${((state?.progressStep ?? 0) / (state?.totalSteps ?? 1)) * 100}%` }}
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -120,8 +120,8 @@ const AIReasoningPanel: React.FC = () => {
                   { icon: Shield, label: 'Validation', agent: 'Quality Assurance' },
                 ].map((item, index) => {
                   const Icon = item.icon;
-                  const isActive = state.currentAgent === item.agent;
-                  const isCompleted = state.progressStep > index * 2;
+                  const isActive = state?.currentAgent === item.agent;
+                  const isCompleted = (state?.progressStep ?? 0) > index * 2;
                   
                   return (
                     <div key={index} className={`flex items-center space-x-2 p-2 rounded-lg ${

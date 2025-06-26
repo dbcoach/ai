@@ -372,7 +372,7 @@ When uncertain, internally process:
         totalSteps: 4
       });
 
-      const implementationStep = await this.generateImplementation(designStep, analysisStep);
+      const implementationStep = await this.executeImplementation(designStep, analysisStep);
       steps.push(implementationStep);
 
       onProgress?.({ 
