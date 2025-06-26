@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Zap, ArrowRight, Bot, Sparkles } from 'lucide-react';
 import { DBCoachMode } from '../context/GenerationContext';
+import AuthButton from './auth/AuthButton';
 
 interface LandingPageProps {
   onGenerate: (prompt: string, dbType: string, mode?: DBCoachMode) => void;
@@ -55,8 +56,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
       {/* Gradient mesh overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-blue-500/10"></div>
 
-      {/* Brand in top left */}
-      <div className="relative z-10 flex justify-start mb-6">
+      {/* Header with brand and auth */}
+      <div className="relative z-10 flex justify-between items-center mb-6">
         <div 
           className="flex items-center space-x-3 cursor-pointer group"
           onMouseEnter={() => setIsBrandHovered(true)}
@@ -71,6 +72,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
             DB.Coach
           </span>
         </div>
+        
+        {/* Auth Button */}
+        <AuthButton />
       </div>
 
       {/* Main content - centered and filling remaining space */}
