@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Zap, ArrowRight, Bot, Sparkles } from 'lucide-react';
 import { DBCoachMode } from '../context/GenerationContext';
+import AuthButton from './auth/AuthButton';
 
 interface LandingPageProps {
   onGenerate: (prompt: string, dbType: string, mode?: DBCoachMode) => void;
@@ -55,8 +56,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
       {/* Gradient mesh overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-blue-500/10"></div>
 
-      {/* Brand in top left */}
-      <div className="relative z-10 flex justify-start mb-6">
+      {/* Header with brand and auth */}
+      <div className="relative z-10 flex justify-between items-center mb-6">
         <div 
           className="flex items-center space-x-3 cursor-pointer group"
           onMouseEnter={() => setIsBrandHovered(true)}
@@ -71,6 +72,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
             DB.Coach
           </span>
         </div>
+        
+        {/* Auth Button */}
+        <AuthButton />
       </div>
 
       {/* Main content - centered and filling remaining space */}
@@ -114,6 +118,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                       ))}
                     </div>
                   </div>
+<<<<<<< HEAD
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
@@ -121,6 +126,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                     className="w-full h-32 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed"
                     required
                   />
+=======
+                  
+                  <div className="relative">
+                    {/* Flowing light animation wrapper */}
+                    <div className={`absolute inset-0 rounded-xl transition-opacity duration-500 ${
+                      showInitialGlow ? 'opacity-100' : 'opacity-0'
+                    }`}>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500 via-blue-500 via-green-500 via-yellow-500 via-red-500 to-white-500 animate-flowing-border p-0.5">
+                        <div className="w-full h-full bg-slate-700/100 rounded-xl"></div>
+                      </div>
+                    </div>
+                    
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
+                      className="relative w-full h-32 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed z-10"
+                      required
+                    />
+                  </div>
+>>>>>>> 8bc41320d285376a6c936d52546f1cccd0efa34a
                 </div>
 
                 {/* DBCoach Mode Selector */}
@@ -200,7 +226,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                       </>
                     ) : (
                       <>
-                        <p className="font-medium mb-1">💡 Pro tip:</p>
+                        <p className="font-medium mb-1">💡 Standard Features:</p>
                         <p>Be specific about your use case. Mention entities, relationships, and any special requirements for the best results.</p>
                       </>
                     )}

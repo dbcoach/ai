@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import LandingPage from './components/LandingPage';
 import GenerationView from './components/GenerationView';
 import { GenerationProvider, DBCoachMode } from './context/GenerationContext';
+import { AuthProvider } from './contexts/AuthContext';
 import useGeneration from './hooks/useGeneration';
 
 type AppState = 'landing' | 'generating';
@@ -33,9 +34,11 @@ function AppContent() {
 
 function App() {
   return (
-    <GenerationProvider>
-      <AppContent />
-    </GenerationProvider>
+    <AuthProvider>
+      <GenerationProvider>
+        <AppContent />
+      </GenerationProvider>
+    </AuthProvider>
   );
 }
 
