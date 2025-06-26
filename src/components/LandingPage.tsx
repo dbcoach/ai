@@ -11,6 +11,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
   const [dbType, setDbType] = useState('SQL');
   const [mode, setMode] = useState<DBCoachMode>('dbcoach');
   const [isHovered, setIsHovered] = useState(false);
+  const [isBrandHovered, setIsBrandHovered] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,52 +45,60 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
       {/* Gradient mesh overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-blue-500/10"></div>
 
-      {/* Brand in top right */}
-      <div className="relative z-10 flex justify-end mb-8">
-        <div className="flex items-center space-x-2 bg-slate-800/40 backdrop-blur-sm border border-purple-500/20 rounded-xl px-4 py-2">
-          <div className="p-1.5 bg-purple-500/20 rounded-lg">
-            <Database className="w-5 h-5 text-purple-400" />
+      {/* Brand in top left */}
+      <div className="relative z-10 flex justify-start mb-8">
+        <div 
+          className="flex items-center space-x-3 cursor-pointer group"
+          onMouseEnter={() => setIsBrandHovered(true)}
+          onMouseLeave={() => setIsBrandHovered(false)}
+        >
+          <div className={`transition-transform duration-300 ease-out ${
+            isBrandHovered ? 'rotate-12 scale-110' : ''
+          }`}>
+            <Database className="w-8 h-8 text-purple-400" />
           </div>
-          <span className="text-xl font-bold text-white tracking-tight">DB.Coach</span>
+          <span className="text-2xl font-bold text-white tracking-tight group-hover:text-purple-300 transition-colors duration-300">
+            DB.Coach
+          </span>
         </div>
       </div>
 
       {/* Main content - centered and filling remaining space */}
       <div className="flex-1 flex items-center justify-center relative z-10">
-        <div className="w-full max-w-4xl mx-auto text-center">
+        <div className="w-full max-w-5xl mx-auto text-center">
           {/* Main heading */}
-          <div className="mb-16">
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
+          <div className="mb-20">
+            <h1 className="text-6xl md:text-8xl font-extrabold text-white mb-8 tracking-tight leading-none">
               What data do you want to store?
             </h1>
-            <p className="text-lg md:text-xl text-slate-300 font-light opacity-90">
+            <p className="text-xl md:text-2xl text-slate-300 font-light opacity-90 max-w-2xl mx-auto">
               Design Databases at the Speed of Thought
             </p>
           </div>
 
           {/* Input form */}
-          <div className="max-w-3xl mx-auto">
-            <div className="backdrop-blur-xl bg-slate-800/40 border border-purple-500/20 rounded-2xl p-8 shadow-2xl shadow-purple-500/5">
-              <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="backdrop-blur-xl bg-slate-800/40 border border-purple-500/20 rounded-3xl p-10 shadow-2xl shadow-purple-500/5">
+              <form onSubmit={handleSubmit} className="space-y-10">
                 {/* DBCoach Mode Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-4 text-left">
+                  <label className="block text-base font-medium text-slate-300 mb-6 text-left">
                     Generation Mode
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-6">
                     <button
                       type="button"
                       onClick={() => setMode('dbcoach')}
-                      className={`p-5 rounded-xl border transition-all duration-200 ${
+                      className={`p-6 rounded-2xl border transition-all duration-200 ${
                         mode === 'dbcoach'
                           ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-purple-500/50 text-purple-300'
                           : 'bg-slate-700/30 border-slate-600/50 text-slate-400 hover:bg-slate-700/50 hover:border-slate-500/50'
                       }`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <Bot className="w-6 h-6" />
+                      <div className="flex items-center space-x-4">
+                        <Bot className="w-7 h-7" />
                         <div className="text-left">
-                          <div className="font-semibold text-base">DBCoach Pro</div>
+                          <div className="font-semibold text-lg">DBCoach Pro</div>
                           <div className="text-sm opacity-75">Multi-agent analysis</div>
                         </div>
                       </div>
@@ -97,16 +106,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                     <button
                       type="button"
                       onClick={() => setMode('standard')}
-                      className={`p-5 rounded-xl border transition-all duration-200 ${
+                      className={`p-6 rounded-2xl border transition-all duration-200 ${
                         mode === 'standard'
                           ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
                           : 'bg-slate-700/30 border-slate-600/50 text-slate-400 hover:bg-slate-700/50 hover:border-slate-500/50'
                       }`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <Sparkles className="w-6 h-6" />
+                      <div className="flex items-center space-x-4">
+                        <Sparkles className="w-7 h-7" />
                         <div className="text-left">
-                          <div className="font-semibold text-base">Standard</div>
+                          <div className="font-semibold text-lg">Standard</div>
                           <div className="text-sm opacity-75">Quick generation</div>
                         </div>
                       </div>
@@ -116,16 +125,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
 
                 {/* Database type selector */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-4 text-left">
+                  <label className="block text-base font-medium text-slate-300 mb-6 text-left">
                     Database Type
                   </label>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-6">
                     {['SQL', 'NoSQL', 'VectorDB'].map((type) => (
                       <button
                         key={type}
                         type="button"
                         onClick={() => setDbType(type)}
-                        className={`p-4 rounded-xl border transition-all duration-200 font-medium ${
+                        className={`p-5 rounded-2xl border transition-all duration-200 font-semibold text-lg ${
                           dbType === type
                             ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
                             : 'bg-slate-700/30 border-slate-600/50 text-slate-400 hover:bg-slate-700/50 hover:border-slate-500/50'
@@ -139,14 +148,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
 
                 {/* Main textarea */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-4 text-left">
+                  <label className="block text-base font-medium text-slate-300 mb-6 text-left">
                     Describe Your Database
                   </label>
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
-                    className="w-full h-40 p-5 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none text-base leading-relaxed"
+                    className="w-full h-48 p-6 bg-slate-700/30 border border-slate-600/50 rounded-2xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none text-lg leading-relaxed"
                     required
                   />
                 </div>
@@ -157,35 +166,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                   disabled={!prompt.trim()}
                   onMouseEnter={() => setIsHovered(true)}
                   onMouseLeave={() => setIsHovered(false)}
-                  className={`w-full p-5 bg-gradient-to-r ${
+                  className={`w-full p-6 bg-gradient-to-r ${
                     mode === 'dbcoach' 
                       ? 'from-purple-600 via-blue-600 to-purple-700 hover:from-purple-500 hover:via-blue-500 hover:to-purple-600' 
                       : 'from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600'
-                  } disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 text-lg ${
+                  } disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-2xl transition-all duration-200 flex items-center justify-center space-x-4 text-xl ${
                     isHovered && prompt.trim() ? 'shadow-lg shadow-purple-500/25 transform scale-[1.02]' : ''
                   }`}
                 >
-                  {mode === 'dbcoach' ? <Bot className="w-6 h-6" /> : <Zap className="w-6 h-6" />}
+                  {mode === 'dbcoach' ? <Bot className="w-7 h-7" /> : <Zap className="w-7 h-7" />}
                   <span>{mode === 'dbcoach' ? 'Generate with DBCoach Pro' : 'Generate Database Design'}</span>
-                  <ArrowRight className="w-6 h-6" />
+                  <ArrowRight className="w-7 h-7" />
                 </button>
               </form>
 
               {/* Help text */}
-              <div className="mt-8 p-5 bg-slate-700/20 rounded-xl border border-slate-600/30">
-                <div className="flex items-start space-x-4">
+              <div className="mt-10 p-6 bg-slate-700/20 rounded-2xl border border-slate-600/30">
+                <div className="flex items-start space-x-5">
                   <div className="p-2 bg-purple-500/20 rounded-lg">
-                    {mode === 'dbcoach' ? <Bot className="w-5 h-5 text-purple-400" /> : <Zap className="w-5 h-5 text-purple-400" />}
+                    {mode === 'dbcoach' ? <Bot className="w-6 h-6 text-purple-400" /> : <Zap className="w-6 h-6 text-purple-400" />}
                   </div>
-                  <div className="text-sm text-slate-300 leading-relaxed">
+                  <div className="text-base text-slate-300 leading-relaxed">
                     {mode === 'dbcoach' ? (
                       <>
-                        <p className="font-medium mb-2">🤖 DBCoach Pro Features:</p>
+                        <p className="font-semibold mb-3">🤖 DBCoach Pro Features:</p>
                         <p>Multi-agent analysis • Enterprise validation • Performance optimization • Security audit • Production-ready implementation packages</p>
                       </>
                     ) : (
                       <>
-                        <p className="font-medium mb-2">💡 Pro tip:</p>
+                        <p className="font-semibold mb-3">💡 Pro tip:</p>
                         <p>Be specific about your use case. Mention entities, relationships, and any special requirements for the best results.</p>
                       </>
                     )}
