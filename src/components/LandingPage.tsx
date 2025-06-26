@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database, Zap, ArrowRight, Bot, Sparkles } from 'lucide-react';
 import { DBCoachMode } from '../context/GenerationContext';
 
@@ -12,6 +12,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
   const [mode, setMode] = useState<DBCoachMode>('dbcoach');
   const [isHovered, setIsHovered] = useState(false);
   const [isBrandHovered, setIsBrandHovered] = useState(false);
+  const [showInitialGlow, setShowInitialGlow] = useState(true);
+
+  useEffect(() => {
+    // Hide the initial glow after animation completes
+    const timer = setTimeout(() => {
+      setShowInitialGlow(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,8 +90,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
           <div className="max-w-3xl mx-auto">
             <div className="backdrop-blur-xl bg-slate-800/40 border border-purple-500/20 rounded-2xl p-6 shadow-2xl shadow-purple-500/5">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Main textarea with inline database type selector */}
-                <div>
+                {/* Main textarea with initial glow animation */}
+                <div className="relative">
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-medium text-slate-300">
                       Describe Your Database
@@ -93,7 +103,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                           key={type}
                           type="button"
                           onClick={() => setDbType(type)}
-                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-2000 ${
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
                             dbType === type
                               ? 'bg-purple-500/30 text-purple-300 shadow-sm border border-purple-400/30'
                               : 'text-slate-400 hover:text-slate-300 hover:bg-slate-600/30'
@@ -108,7 +118,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
-                    className="w-full h-32 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed page-load-glow"
+                    className="w-full h-32 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed"
                     required
                   />
                 </div>
@@ -204,6 +214,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
 
       {/* Bottom spacing */}
       <div className="h-12"></div>
+
+      {/* Custom CSS for flowing border animation */}
+      <style jsx>{`
+        @keyframes flowing-border {
+          0% {
+            background-position: 0% 0%;
+          }
+          50% {
+            background-position: 100% 100%;
+          }
+          100% {
+            background-position: 0% 0%;
+          }
+        }
+        
+        .animate-flowing-border {
+          background-size: 400% 400%;
+          animation: flowing-border 3s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };
