@@ -129,7 +129,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
-                      className="relative w-full h-32 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed z-10"
+                      className="relative w-full h-32 p-4 bg-slate-700/100 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed z-10"
                       required
                     />
                   </div>
