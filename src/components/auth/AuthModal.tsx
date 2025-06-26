@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Mail, Lock, Eye, EyeOff, User, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -100,23 +101,29 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 's
     resetForm();
   };
 
-  if (!isOpen) return null;
-
   const currentError = localError || error;
 
-  return (
+  // Modal JSX
+  const modalContent = (
     <div 
       className="fixed inset-0 flex items-center justify-center p-4"
-      style={{ zIndex: 9999 }}
+      style={{ 
+        zIndex: 99999, // Very high z-index
+        position: 'fixed' // Ensure it's positioned relative to viewport
+      }}
     >
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
+        style={{ zIndex: 1 }}
       />
       
       {/* Modal Content */}
-      <div className="relative bg-slate-800 rounded-2xl border border-slate-700/50 w-full max-w-md shadow-2xl">
+      <div 
+        className="relative bg-slate-800/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 w-full max-w-md shadow-2xl shadow-black/50"
+        style={{ zIndex: 2 }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
           <h2 className="text-xl font-semibold text-white">
@@ -345,6 +352,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 's
       </div>
     </div>
   );
+
+  // Don't render if not open
+  if (!isOpen) return null;
+
+  // Use portal to render modal at document root
+  return createPortal(modalContent, document.body);
 };
 
 export default AuthModal;

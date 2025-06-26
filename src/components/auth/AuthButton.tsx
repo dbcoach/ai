@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { User, LogOut, Settings, Crown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthModal from './AuthModal';
@@ -35,56 +36,62 @@ const AuthButton: React.FC = () => {
           </div>
         </button>
 
-        {/* User dropdown menu */}
-        {showUserMenu && (
-          <div 
-            className="absolute right-0 top-full mt-2 w-64 bg-slate-800 border border-slate-700/50 rounded-lg shadow-xl"
-            style={{ zIndex: 10000 }}
-          >
-            <div className="p-4 border-b border-slate-700/50">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                  {getInitials(user.email || 'U')}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">{user.email}</p>
-                  <p className="text-xs text-slate-400">Free Plan</p>
+        {/* User dropdown menu - also use portal for proper layering */}
+        {showUserMenu && createPortal(
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0"
+              style={{ zIndex: 50000 }}
+              onClick={() => setShowUserMenu(false)}
+            />
+            
+            {/* Menu positioned at button location */}
+            <div 
+              className="fixed bg-slate-800 border border-slate-700/50 rounded-lg shadow-xl w-64"
+              style={{ 
+                zIndex: 50001,
+                top: '80px', // Approximate position - in a real app you'd calculate this
+                right: '16px'
+              }}
+            >
+              <div className="p-4 border-b border-slate-700/50">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    {getInitials(user.email || 'U')}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">{user.email}</p>
+                    <p className="text-xs text-slate-400">Free Plan</p>
+                  </div>
                 </div>
               </div>
+              
+              <div className="p-2">
+                <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors">
+                  <Crown className="w-4 h-4" />
+                  <span>Upgrade to Pro</span>
+                </button>
+                
+                <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors">
+                  <Settings className="w-4 h-4" />
+                  <span>Account Settings</span>
+                </button>
+                
+                <hr className="my-2 border-slate-700/50" />
+                
+                <button
+                  onClick={handleSignOut}
+                  disabled={loading}
+                  className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>{loading ? 'Signing out...' : 'Sign Out'}</span>
+                </button>
+              </div>
             </div>
-            
-            <div className="p-2">
-              <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors">
-                <Crown className="w-4 h-4" />
-                <span>Upgrade to Pro</span>
-              </button>
-              
-              <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors">
-                <Settings className="w-4 h-4" />
-                <span>Account Settings</span>
-              </button>
-              
-              <hr className="my-2 border-slate-700/50" />
-              
-              <button
-                onClick={handleSignOut}
-                disabled={loading}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>{loading ? 'Signing out...' : 'Sign Out'}</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Backdrop to close menu */}
-        {showUserMenu && (
-          <div
-            className="fixed inset-0"
-            style={{ zIndex: 9999 }}
-            onClick={() => setShowUserMenu(false)}
-          />
+          </>,
+          document.body
         )}
       </div>
     );
