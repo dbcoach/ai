@@ -29,6 +29,7 @@ interface GenerationState {
   currentAgent: string;
   progressStep: number;
   totalSteps: number;
+  messageCounter: number; // Added to ensure unique keys
 }
 
 type GenerationAction =
@@ -53,7 +54,8 @@ const initialState: GenerationState = {
   mode: 'standard',
   currentAgent: '',
   progressStep: 0,
-  totalSteps: 4
+  totalSteps: 4,
+  messageCounter: 0
 };
 
 function generationReducer(state: GenerationState, action: GenerationAction): GenerationState {
@@ -66,6 +68,7 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
         dbType: action.payload.dbType,
         mode: action.payload.mode,
         totalSteps: action.payload.mode === 'dbcoach' ? 8 : 4,
+        messageCounter: 1,
         reasoningMessages: [
           {
             id: '1',
@@ -134,10 +137,11 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
     case 'ADD_REASONING_MESSAGE':
       return {
         ...state,
+        messageCounter: state.messageCounter + 1,
         reasoningMessages: [
           ...state.reasoningMessages,
           {
-            id: `ai-${Date.now()}`,
+            id: `ai-${state.messageCounter}`,
             type: 'ai',
             content: action.payload.content,
             timestamp: new Date(),
