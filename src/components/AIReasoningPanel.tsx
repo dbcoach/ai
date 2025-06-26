@@ -121,7 +121,7 @@ const AIReasoningPanel: React.FC = () => {
                 ].map((item, index) => {
                   const Icon = item.icon;
                   const isActive = state?.currentAgent === item.agent;
-                  const isCompleted = (state?.progressStep ?? 0) > index * 2;
+                  const isCompleted = (state?.progressStep ?? 0) > index + 1;
                   
                   return (
                     <div key={index} className={`flex items-center space-x-2 p-2 rounded-lg ${

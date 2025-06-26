@@ -67,7 +67,7 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
         prompt: action.payload.prompt,
         dbType: action.payload.dbType,
         mode: action.payload.mode,
-        totalSteps: action.payload.mode === 'dbcoach' ? 8 : 4,
+        totalSteps: 4, // Both modes have 4 main phases
         messageCounter: 1,
         reasoningMessages: [
           {
@@ -89,8 +89,8 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
           currentAgent: progress.agent || '',
           progressStep: progress.currentStep || 0,
           currentStep: progress.step === 'analysis' ? 'schema' : 
-                     progress.step === 'design' ? 'schema' :
-                     progress.step === 'validation' ? 'api' : 'visualization',
+                     progress.step === 'design' ? 'data' :
+                     progress.step === 'implementation' ? 'api' : 'visualization',
           isGenerating: !progress.isComplete
         };
       } else {
@@ -111,22 +111,33 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
       
       // Map DBCoach steps to tab types
       if ('agent' in step) {
-        const tabType = step.type === 'analysis' || step.type === 'design' ? 'schema' :
-                       step.type === 'validation' ? 'api' : 'data';
+        const tabType: TabType = step.type === 'analysis' ? 'schema' :
+                                 step.type === 'design' ? 'data' :
+                                 step.type === 'implementation' ? 'api' : 'visualization';
         newContent.set(tabType, step);
+        
+        const newCompletedSteps = new Set([...state.completedSteps, tabType]);
+        
+        return {
+          ...state,
+          generatedContent: newContent,
+          completedSteps: newCompletedSteps,
+          isGenerating: newCompletedSteps.size < 4, // DBCoach has 4 phases
+          currentStep: newCompletedSteps.size < 4 ? tabType : null
+        };
       } else {
+        // Standard mode
         newContent.set(step.type, step);
+        const newCompletedSteps = new Set([...state.completedSteps, step.type]);
+        
+        return {
+          ...state,
+          generatedContent: newContent,
+          completedSteps: newCompletedSteps,
+          isGenerating: newCompletedSteps.size < 4,
+          currentStep: newCompletedSteps.size < 4 ? state.currentStep : null
+        };
       }
-      
-      const newCompletedSteps = new Set([...state.completedSteps, step.type]);
-      
-      return {
-        ...state,
-        generatedContent: newContent,
-        completedSteps: newCompletedSteps,
-        isGenerating: newCompletedSteps.size < state.totalSteps,
-        currentStep: newCompletedSteps.size < state.totalSteps ? state.currentStep : null
-      };
     }
 
     case 'ADD_DBCOACH_STEP':
@@ -209,19 +220,6 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           steps.forEach(step => {
             dispatch({ type: 'ADD_DBCOACH_STEP', payload: step });
             dispatch({ type: 'COMPLETE_STEP', payload: step });
-          });
-          
-          // Mark generation as complete
-          dispatch({ 
-            type: 'UPDATE_PROGRESS', 
-            payload: { 
-              step: 'validation', 
-              agent: 'DBCoach Master',
-              reasoning: 'All phases completed successfully', 
-              isComplete: true,
-              currentStep: 4,
-              totalSteps: 4
-            } as DBCoachProgress
           });
           
           dispatch({ 

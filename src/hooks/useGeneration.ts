@@ -13,6 +13,7 @@ export function useGeneration() {
     error: context.state.error,
     prompt: context.state.prompt,
     dbType: context.state.dbType,
+    state: context.state, // Expose full state for components that need it
     
     // Actions
     startGeneration: context.startGeneration,
