@@ -93,7 +93,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                           key={type}
                           type="button"
                           onClick={() => setDbType(type)}
-                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-2000 ${
                             dbType === type
                               ? 'bg-purple-500/30 text-purple-300 shadow-sm border border-purple-400/30'
                               : 'text-slate-400 hover:text-slate-300 hover:bg-slate-600/30'
