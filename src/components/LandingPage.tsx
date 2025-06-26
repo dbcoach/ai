@@ -80,6 +80,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
           <div className="max-w-3xl mx-auto">
             <div className="backdrop-blur-xl bg-slate-800/40 border border-purple-500/20 rounded-2xl p-6 shadow-2xl shadow-purple-500/5">
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Main textarea - MOVED TO TOP */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-3 text-left">
+                    Describe Your Database
+                  </label>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
+                    className="w-full h-32 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed"
+                    required
+                  />
+                </div>
+
                 {/* DBCoach Mode Selector */}
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-3 text-left">
@@ -144,20 +158,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Main textarea */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3 text-left">
-                    Describe Your Database
-                  </label>
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
-                    className="w-full h-32 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 resize-none leading-relaxed"
-                    required
-                  />
                 </div>
 
                 {/* Generate button */}
