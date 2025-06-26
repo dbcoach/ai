@@ -80,11 +80,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
           <div className="max-w-3xl mx-auto">
             <div className="backdrop-blur-xl bg-slate-800/40 border border-purple-500/20 rounded-2xl p-6 shadow-2xl shadow-purple-500/5">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Main textarea - MOVED TO TOP */}
+                {/* Main textarea with inline database type selector */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3 text-left">
-                    Describe Your Database
-                  </label>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-medium text-slate-300">
+                      Describe Your Database
+                    </label>
+                    {/* Elegant Database Type Selector */}
+                    <div className="flex items-center space-x-1 bg-slate-700/30 rounded-lg p-1 border border-slate-600/50">
+                      {['SQL', 'NoSQL', 'VectorDB'].map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setDbType(type)}
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                            dbType === type
+                              ? 'bg-purple-500/30 text-purple-300 shadow-sm border border-purple-400/30'
+                              : 'text-slate-400 hover:text-slate-300 hover:bg-slate-600/30'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
@@ -134,29 +153,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                         </div>
                       </div>
                     </button>
-                  </div>
-                </div>
-
-                {/* Database type selector */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3 text-left">
-                    Database Type
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {['SQL', 'NoSQL', 'VectorDB'].map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setDbType(type)}
-                        className={`p-3 rounded-xl border transition-all duration-200 font-medium ${
-                          dbType === type
-                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
-                            : 'bg-slate-700/30 border-slate-600/50 text-slate-400 hover:bg-slate-700/50 hover:border-slate-500/50'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
