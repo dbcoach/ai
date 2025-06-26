@@ -208,11 +208,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                     {mode === 'dbcoach' ? (
                       <>
                         <p className="font-medium mb-1">🤖 DBCoach Pro Features:</p>
-                        <p>Multi-agent analysis • Enterprise validation • Performance optimization • Security audit • Production-ready implementation packages</p>
+                        <p>Multi-agent analysis • Enterprise validation • Performance optimization <br/> • Security audit • Production-ready implementation packages</p>
                       </>
                     ) : (
                       <>
-                        <p className="font-medium mb-1">💡 Pro tip:</p>
+                        <p className="font-medium mb-1">💡 Standard Features:</p>
                         <p>Be specific about your use case. Mention entities, relationships, and any special requirements for the best results.</p>
                       </>
                     )}
