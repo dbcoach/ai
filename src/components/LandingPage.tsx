@@ -18,7 +18,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
     // Hide the initial glow after animation completes
     const timer = setTimeout(() => {
       setShowInitialGlow(false);
-    }, 3000);
+    }, 4000); // Extended to 4 seconds for better visibility
 
     return () => clearTimeout(timer);
   }, []);
@@ -90,7 +90,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
           <div className="max-w-3xl mx-auto">
             <div className="backdrop-blur-xl bg-slate-800/40 border border-purple-500/20 rounded-2xl p-6 shadow-2xl shadow-purple-500/5">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Main textarea with initial glow animation */}
+                {/* Main textarea with flowing border glow */}
                 <div className="relative">
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-medium text-slate-300">
@@ -116,14 +116,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                   </div>
                   
                   <div className="relative">
-                    {/* Flowing light animation wrapper */}
-                    <div className={`absolute inset-0 rounded-xl transition-opacity duration-1000 ${
-                      showInitialGlow ? 'opacity-100' : 'opacity-0'
-                    }`}>
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500 via-blue-500 via-green-500 via-yellow-500 via-red-500 to-purple-500 animate-flowing-border p-0.5">
-                        <div className="w-full h-full bg-slate-700/30 rounded-xl"></div>
+                    {/* Flowing border glow effect */}
+                    {showInitialGlow && (
+                      <div className="absolute -inset-0.5 rounded-xl">
+                        <div className="absolute inset-0 rounded-xl border-glow"></div>
                       </div>
-                    </div>
+                    )}
                     
                     <textarea
                       value={prompt}
@@ -227,23 +225,40 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
       {/* Bottom spacing */}
       <div className="h-12"></div>
 
-      {/* Custom CSS for flowing border animation */}
+      {/* Custom CSS for flowing border glow animation */}
       <style jsx>{`
-        @keyframes flowing-border {
-          0% {
-            background-position: 0% 0%;
-          }
-          50% {
-            background-position: 100% 100%;
-          }
-          100% {
-            background-position: 0% 0%;
-          }
+        .border-glow {
+          background: conic-gradient(
+            from 0deg,
+            transparent,
+            #8b5cf6,
+            #3b82f6,
+            #06b6d4,
+            #10b981,
+            #f59e0b,
+            #ef4444,
+            #8b5cf6,
+            transparent
+          );
+          animation: rotate-border 4s linear infinite;
+          border-radius: 0.75rem;
         }
         
-        .animate-flowing-border {
-          background-size: 400% 400%;
-          animation: flowing-border 3s ease-in-out;
+        .border-glow::after {
+          content: '';
+          position: absolute;
+          inset: 2px;
+          background: transparent;
+          border-radius: 0.75rem;
+        }
+        
+        @keyframes rotate-border {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
         }
       `}</style>
     </div>
