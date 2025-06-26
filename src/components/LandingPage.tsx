@@ -106,8 +106,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                     </div>
                   </div>
                   
-                  {/* Flowing border wrapper with page-load glow */}
-                  <div className={`flowing-border transition-all duration-300 ${
+                  {/* Flowing border wrapper with page-load glow - Applied to wrapper, not input */}
+                  <div className={`flowing-border page-load-glow transition-all duration-300 ${
                     isFocused ? 'flowing-border-focused' : ''
                   }`}>
                     <textarea
@@ -116,7 +116,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                       onFocus={() => setIsFocused(true)}
                       onBlur={() => setIsFocused(false)}
                       placeholder="Describe your database needs... (e.g., 'A blog platform with users, posts, and comments')"
-                      className="page-load-glow w-full h-32 p-4 bg-slate-700/30 border-0 rounded-xl text-white placeholder-slate-400 focus:outline-none transition-all duration-200 resize-none leading-relaxed"
+                      className="w-full h-32 p-4 bg-slate-700/30 border-0 rounded-xl text-white placeholder-slate-400 focus:outline-none transition-all duration-200 resize-none leading-relaxed"
                       required
                     />
                   </div>
