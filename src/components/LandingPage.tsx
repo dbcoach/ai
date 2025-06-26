@@ -68,7 +68,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
         <div className="w-full max-w-5xl mx-auto text-center">
           {/* Main heading */}
           <div className="mb-20">
-            <h1 className="text-4xl md:text-6xl lg:text-4xl font-extrabold text-white mb-8 tracking-tight leading-none">
+            <h1 className="text-4xl md:text-6xl lg:text-5xl font-extrabold text-white mb-8 tracking-tight leading-none">
               What data do you want to store?
             </h1>
             <p className="text-xl md:text-2xl text-slate-300 font-light opacity-90 max-w-2xl mx-auto">
