@@ -121,7 +121,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                       showInitialGlow ? 'opacity-100' : 'opacity-0'
                     }`}>
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500 via-blue-500 via-green-500 via-yellow-500 via-red-500 to-purple-500 animate-flowing-border p-0.5">
-                        <div className="w-full h-full bg-slate-700/30 rounded-xl"></div>
+                        <div className="w-full h-full bg-slate-700/100 rounded-xl"></div>
                       </div>
                     </div>
                     
