@@ -90,7 +90,8 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
           progressStep: progress.currentStep || 0,
           currentStep: progress.step === 'analysis' ? 'schema' : 
                      progress.step === 'design' ? 'schema' :
-                     progress.step === 'validation' ? 'api' : 'visualization'
+                     progress.step === 'validation' ? 'api' : 'visualization',
+          isGenerating: !progress.isComplete
         };
       } else {
         return {
@@ -208,6 +209,19 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           steps.forEach(step => {
             dispatch({ type: 'ADD_DBCOACH_STEP', payload: step });
             dispatch({ type: 'COMPLETE_STEP', payload: step });
+          });
+          
+          // Mark generation as complete
+          dispatch({ 
+            type: 'UPDATE_PROGRESS', 
+            payload: { 
+              step: 'validation', 
+              agent: 'DBCoach Master',
+              reasoning: 'All phases completed successfully', 
+              isComplete: true,
+              currentStep: 4,
+              totalSteps: 4
+            } as DBCoachProgress
           });
           
           dispatch({ 
