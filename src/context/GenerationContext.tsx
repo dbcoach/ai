@@ -1,29 +1,42 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { GenerationStep, GenerationProgress } from '../services/geminiService';
+import { GenerationStep as DBCoachStep, GenerationProgress as DBCoachProgress } from '../services/enhancedDBCoachService';
 
 export type TabType = 'schema' | 'data' | 'api' | 'visualization';
+export type DBCoachMode = 'standard' | 'dbcoach';
+
+// Union types to support both services
+export type UnifiedGenerationStep = GenerationStep | DBCoachStep;
+export type UnifiedGenerationProgress = GenerationProgress | DBCoachProgress;
 
 interface GenerationState {
   isGenerating: boolean;
   currentStep: TabType | null;
   completedSteps: Set<TabType>;
-  generatedContent: Map<TabType, GenerationStep>;
+  generatedContent: Map<TabType, UnifiedGenerationStep>;
+  dbCoachSteps: DBCoachStep[];
   reasoningMessages: Array<{
     id: string;
     type: 'ai' | 'user';
     content: string;
     timestamp: Date;
+    agent?: string;
   }>;
   error: string | null;
   prompt: string;
   dbType: string;
+  mode: DBCoachMode;
+  currentAgent: string;
+  progressStep: number;
+  totalSteps: number;
 }
 
 type GenerationAction =
-  | { type: 'START_GENERATION'; payload: { prompt: string; dbType: string } }
-  | { type: 'UPDATE_PROGRESS'; payload: GenerationProgress }
-  | { type: 'COMPLETE_STEP'; payload: GenerationStep }
-  | { type: 'ADD_REASONING_MESSAGE'; payload: { content: string } }
+  | { type: 'START_GENERATION'; payload: { prompt: string; dbType: string; mode: DBCoachMode } }
+  | { type: 'UPDATE_PROGRESS'; payload: UnifiedGenerationProgress }
+  | { type: 'COMPLETE_STEP'; payload: UnifiedGenerationStep }
+  | { type: 'ADD_DBCOACH_STEP'; payload: DBCoachStep }
+  | { type: 'ADD_REASONING_MESSAGE'; payload: { content: string; agent?: string } }
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'RESET_GENERATION' };
 
@@ -32,10 +45,15 @@ const initialState: GenerationState = {
   currentStep: null,
   completedSteps: new Set(),
   generatedContent: new Map(),
+  dbCoachSteps: [],
   reasoningMessages: [],
   error: null,
   prompt: '',
-  dbType: ''
+  dbType: '',
+  mode: 'standard',
+  currentAgent: '',
+  progressStep: 0,
+  totalSteps: 4
 };
 
 function generationReducer(state: GenerationState, action: GenerationAction): GenerationState {
@@ -46,6 +64,8 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
         isGenerating: true,
         prompt: action.payload.prompt,
         dbType: action.payload.dbType,
+        mode: action.payload.mode,
+        totalSteps: action.payload.mode === 'dbcoach' ? 8 : 4,
         reasoningMessages: [
           {
             id: '1',
@@ -56,29 +76,60 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
         ]
       };
 
-    case 'UPDATE_PROGRESS':
-      return {
-        ...state,
-        currentStep: action.payload.step,
-        completedSteps: action.payload.isComplete
-          ? new Set([...state.completedSteps, action.payload.step])
-          : state.completedSteps,
-        isGenerating: !action.payload.isComplete || state.completedSteps.size < 3 // Continue generating until all 4 steps are done
-      };
+    case 'UPDATE_PROGRESS': {
+      const progress = action.payload as UnifiedGenerationProgress;
+      const isDBCoach = 'agent' in progress;
+      
+      if (isDBCoach) {
+        return {
+          ...state,
+          currentAgent: progress.agent || '',
+          progressStep: progress.currentStep || 0,
+          currentStep: progress.step === 'analysis' ? 'schema' : 
+                     progress.step === 'design' ? 'schema' :
+                     progress.step === 'validation' ? 'api' : 'visualization'
+        };
+      } else {
+        return {
+          ...state,
+          currentStep: progress.step,
+          completedSteps: progress.isComplete
+            ? new Set([...state.completedSteps, progress.step])
+            : state.completedSteps,
+          isGenerating: !progress.isComplete || state.completedSteps.size < 3
+        };
+      }
+    }
 
     case 'COMPLETE_STEP': {
+      const step = action.payload as UnifiedGenerationStep;
       const newContent = new Map(state.generatedContent);
-      newContent.set(action.payload.type, action.payload);
-      const newCompletedSteps = new Set([...state.completedSteps, action.payload.type]);
+      
+      // Map DBCoach steps to tab types
+      if ('agent' in step) {
+        const tabType = step.type === 'analysis' || step.type === 'design' ? 'schema' :
+                       step.type === 'validation' ? 'api' : 'data';
+        newContent.set(tabType, step);
+      } else {
+        newContent.set(step.type, step);
+      }
+      
+      const newCompletedSteps = new Set([...state.completedSteps, step.type]);
       
       return {
         ...state,
         generatedContent: newContent,
         completedSteps: newCompletedSteps,
-        isGenerating: newCompletedSteps.size < 4, // Stop generating when all 4 steps are done
-        currentStep: newCompletedSteps.size < 4 ? state.currentStep : null
+        isGenerating: newCompletedSteps.size < state.totalSteps,
+        currentStep: newCompletedSteps.size < state.totalSteps ? state.currentStep : null
       };
     }
+
+    case 'ADD_DBCOACH_STEP':
+      return {
+        ...state,
+        dbCoachSteps: [...state.dbCoachSteps, action.payload]
+      };
 
     case 'ADD_REASONING_MESSAGE':
       return {
@@ -89,7 +140,8 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
             id: `ai-${Date.now()}`,
             type: 'ai',
             content: action.payload.content,
-            timestamp: new Date()
+            timestamp: new Date(),
+            agent: action.payload.agent
           }
         ]
       };
@@ -111,10 +163,10 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
 
 interface GenerationContextType {
   state: GenerationState;
-  startGeneration: (prompt: string, dbType: string) => Promise<void>;
+  startGeneration: (prompt: string, dbType: string, mode?: DBCoachMode) => Promise<void>;
   resetGeneration: () => void;
   isStepComplete: (step: TabType) => boolean;
-  getStepContent: (step: TabType) => GenerationStep | undefined;
+  getStepContent: (step: TabType) => UnifiedGenerationStep | undefined;
 }
 
 const GenerationContext = createContext<GenerationContextType | undefined>(undefined);
@@ -122,35 +174,73 @@ const GenerationContext = createContext<GenerationContextType | undefined>(undef
 export function GenerationProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(generationReducer, initialState);
 
-  const startGeneration = async (prompt: string, dbType: string) => {
-    dispatch({ type: 'START_GENERATION', payload: { prompt, dbType } });
+  const startGeneration = async (prompt: string, dbType: string, mode: DBCoachMode = 'standard') => {
+    dispatch({ type: 'START_GENERATION', payload: { prompt, dbType, mode } });
     
     try {
-      const { geminiService } = await import('../services/geminiService');
-      
-      // Test connection first
-      const isConnected = await geminiService.testConnection();
-      if (!isConnected) {
-        throw new Error('Unable to connect to Gemini API. Please check your API key and network connection.');
-      }
-      
-      await geminiService.generateDatabaseDesign(
-        prompt,
-        dbType,
-        (progress: GenerationProgress) => {
-          dispatch({ type: 'UPDATE_PROGRESS', payload: progress });
-          dispatch({ type: 'ADD_REASONING_MESSAGE', payload: { content: progress.reasoning } });
-        }
-      ).then((steps: GenerationStep[]) => {
-        steps.forEach(step => {
-          dispatch({ type: 'COMPLETE_STEP', payload: step });
-        });
+      if (mode === 'dbcoach') {
+        // Use Enhanced DBCoach service
+        const { enhancedDBCoachService } = await import('../services/enhancedDBCoachService');
         
-        dispatch({ 
-          type: 'ADD_REASONING_MESSAGE', 
-          payload: { content: '✅ Database design complete! All components have been generated successfully.' }
+        const isConnected = await enhancedDBCoachService.testConnection();
+        if (!isConnected) {
+          throw new Error('Unable to connect to Enhanced DBCoach API. Please check your API key and network connection.');
+        }
+        
+        await enhancedDBCoachService.generateDatabaseDesign(
+          prompt,
+          dbType,
+          (progress: DBCoachProgress) => {
+            dispatch({ type: 'UPDATE_PROGRESS', payload: progress });
+            dispatch({ 
+              type: 'ADD_REASONING_MESSAGE', 
+              payload: { 
+                content: `🤖 ${progress.agent}: ${progress.reasoning}`,
+                agent: progress.agent
+              }
+            });
+          }
+        ).then((steps: DBCoachStep[]) => {
+          steps.forEach(step => {
+            dispatch({ type: 'ADD_DBCOACH_STEP', payload: step });
+            dispatch({ type: 'COMPLETE_STEP', payload: step });
+          });
+          
+          dispatch({ 
+            type: 'ADD_REASONING_MESSAGE', 
+            payload: { 
+              content: '✅ DBCoach analysis complete! Enterprise-grade database design delivered with multi-agent validation.',
+              agent: 'DBCoach Master'
+            }
+          });
         });
-      });
+      } else {
+        // Use standard Gemini service
+        const { geminiService } = await import('../services/geminiService');
+        
+        const isConnected = await geminiService.testConnection();
+        if (!isConnected) {
+          throw new Error('Unable to connect to Gemini API. Please check your API key and network connection.');
+        }
+        
+        await geminiService.generateDatabaseDesign(
+          prompt,
+          dbType,
+          (progress: GenerationProgress) => {
+            dispatch({ type: 'UPDATE_PROGRESS', payload: progress });
+            dispatch({ type: 'ADD_REASONING_MESSAGE', payload: { content: progress.reasoning } });
+          }
+        ).then((steps: GenerationStep[]) => {
+          steps.forEach(step => {
+            dispatch({ type: 'COMPLETE_STEP', payload: step });
+          });
+          
+          dispatch({ 
+            type: 'ADD_REASONING_MESSAGE', 
+            payload: { content: '✅ Database design complete! All components have been generated successfully.' }
+          });
+        });
+      }
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Generation failed';
@@ -183,7 +273,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     return state.completedSteps.has(step);
   };
 
-  const getStepContent = (step: TabType): GenerationStep | undefined => {
+  const getStepContent = (step: TabType): UnifiedGenerationStep | undefined => {
     return state.generatedContent.get(step);
   };
 
