@@ -25,7 +25,7 @@ export function useGeneration() {
     
     // Progress tracking
     getProgress: () => {
-      const totalSteps = 4; // schema, data, api, visualization
+      const totalSteps = 5; // analysis, schema, implementation, validation, visualization
       const completedCount = context.state.completedSteps.size;
       return Math.round((completedCount / totalSteps) * 100);
     },

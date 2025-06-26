@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { GenerationStep, GenerationProgress } from '../services/geminiService';
 import { GenerationStep as DBCoachStep, GenerationProgress as DBCoachProgress } from '../services/enhancedDBCoachService';
 
-export type TabType = 'schema' | 'data' | 'api' | 'visualization';
+export type TabType = 'analysis' | 'schema' | 'implementation' | 'validation' | 'visualization';
 export type DBCoachMode = 'standard' | 'dbcoach';
 
 // Union types to support both services
@@ -67,7 +67,7 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
         prompt: action.payload.prompt,
         dbType: action.payload.dbType,
         mode: action.payload.mode,
-        totalSteps: 4, // Both modes have 4 main phases
+        totalSteps: action.payload.mode === 'dbcoach' ? 4 : 5, // DBCoach has 4 phases, standard has 5
         messageCounter: 1,
         reasoningMessages: [
           {
@@ -88,9 +88,9 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
           ...state,
           currentAgent: progress.agent || '',
           progressStep: progress.currentStep || 0,
-          currentStep: progress.step === 'analysis' ? 'schema' : 
-                     progress.step === 'design' ? 'data' :
-                     progress.step === 'implementation' ? 'api' : 'visualization',
+          currentStep: progress.step === 'analysis' ? 'analysis' : 
+                     progress.step === 'design' ? 'schema' :
+                     progress.step === 'implementation' ? 'implementation' : 'validation',
           isGenerating: !progress.isComplete
         };
       } else {
@@ -111,9 +111,9 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
       
       // Map DBCoach steps to tab types
       if ('agent' in step) {
-        const tabType: TabType = step.type === 'analysis' ? 'schema' :
-                                 step.type === 'design' ? 'data' :
-                                 step.type === 'implementation' ? 'api' : 'visualization';
+        const tabType: TabType = step.type === 'analysis' ? 'analysis' :
+                                 step.type === 'design' ? 'schema' :
+                                 step.type === 'implementation' ? 'implementation' : 'validation';
         newContent.set(tabType, step);
         
         const newCompletedSteps = new Set([...state.completedSteps, tabType]);
@@ -126,16 +126,17 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
           currentStep: newCompletedSteps.size < 4 ? tabType : null
         };
       } else {
-        // Standard mode
-        newContent.set(step.type, step);
-        const newCompletedSteps = new Set([...state.completedSteps, step.type]);
+        // Standard mode - map to new tab structure
+        const tabType: TabType = step.type;
+        newContent.set(tabType, step);
+        const newCompletedSteps = new Set([...state.completedSteps, tabType]);
         
         return {
           ...state,
           generatedContent: newContent,
           completedSteps: newCompletedSteps,
-          isGenerating: newCompletedSteps.size < 4,
-          currentStep: newCompletedSteps.size < 4 ? state.currentStep : null
+          isGenerating: newCompletedSteps.size < state.totalSteps,
+          currentStep: newCompletedSteps.size < state.totalSteps ? state.currentStep : null
         };
       }
     }

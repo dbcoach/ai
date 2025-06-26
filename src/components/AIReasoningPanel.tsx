@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Bot, User, Zap, Database, Code, Eye, Shield, CheckCircle, Settings } from 'lucide-react';
+import { Bot, User, Zap, Database, Code, Shield, FileText } from 'lucide-react';
 import useGeneration from '../hooks/useGeneration';
 
 const AIReasoningPanel: React.FC = () => {
@@ -114,10 +114,10 @@ const AIReasoningPanel: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { icon: Database, label: 'Analysis', agent: 'Requirements Analyst' },
-                  { icon: Settings, label: 'Design', agent: 'Schema Architect' },
-                  { icon: CheckCircle, label: 'Implementation', agent: 'Implementation Specialist' },
-                  { icon: Shield, label: 'Validation', agent: 'Quality Assurance' },
+                  { icon: FileText, label: 'Requirements', agent: 'Requirements Analyst' },
+                  { icon: Database, label: 'Schema Design', agent: 'Schema Architect' },
+                  { icon: Code, label: 'Implementation', agent: 'Implementation Specialist' },
+                  { icon: Shield, label: 'Quality Report', agent: 'Quality Assurance' },
                 ].map((item, index) => {
                   const Icon = item.icon;
                   const isActive = state?.currentAgent === item.agent;
@@ -159,12 +159,13 @@ const AIReasoningPanel: React.FC = () => {
               </div>
             </div>
           ) : (
-            // Standard mode - show original progress
+            // Standard mode - show updated progress
             <div className="grid grid-cols-2 gap-2">
               {[
+                { icon: FileText, label: 'Analysis', step: 'analysis' as const },
                 { icon: Database, label: 'Schema', step: 'schema' as const },
-                { icon: Eye, label: 'Sample Data', step: 'data' as const },
-                { icon: Code, label: 'API Endpoints', step: 'api' as const },
+                { icon: Code, label: 'Implementation', step: 'implementation' as const },
+                { icon: Shield, label: 'Validation', step: 'validation' as const },
                 { icon: Zap, label: 'Visualization', step: 'visualization' as const },
               ].map((item, index) => {
                 const Icon = item.icon;

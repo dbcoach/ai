@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Eye, Code, Database, Zap } from 'lucide-react';
+import { ArrowLeft, FileText, Database, Code, Shield, Zap } from 'lucide-react';
 import AIReasoningPanel from './AIReasoningPanel';
+import AnalysisTab from './tabs/AnalysisTab';
 import SchemaTab from './tabs/SchemaTab';
-import SampleDataTab from './tabs/SampleDataTab';
-import APIEndpointsTab from './tabs/APIEndpointsTab';
+import ImplementationTab from './tabs/ImplementationTab';
+import ValidationTab from './tabs/ValidationTab';
 import VisualizationTab from './tabs/VisualizationTab';
 import useGeneration from '../hooks/useGeneration';
 
@@ -11,10 +12,10 @@ interface GenerationViewProps {
   onBack: () => void;
 }
 
-type TabType = 'schema' | 'data' | 'api' | 'visualization';
+type TabType = 'analysis' | 'schema' | 'implementation' | 'validation' | 'visualization';
 
 const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('schema');
+  const [activeTab, setActiveTab] = useState<TabType>('analysis');
   const { 
     isGenerating, 
     prompt, 
@@ -23,9 +24,10 @@ const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
   } = useGeneration();
 
   const tabs = [
-    { id: 'schema' as TabType, label: 'Schema', icon: Database },
-    { id: 'data' as TabType, label: 'Sample Data', icon: Eye },
-    { id: 'api' as TabType, label: 'API Endpoints', icon: Code },
+    { id: 'analysis' as TabType, label: 'Requirements', icon: FileText },
+    { id: 'schema' as TabType, label: 'Schema Design', icon: Database },
+    { id: 'implementation' as TabType, label: 'Implementation', icon: Code },
+    { id: 'validation' as TabType, label: 'Quality Report', icon: Shield },
     { id: 'visualization' as TabType, label: 'Visualization', icon: Zap },
   ];
 
@@ -46,12 +48,14 @@ const GenerationView: React.FC<GenerationViewProps> = ({ onBack }) => {
     }
 
     switch (activeTab) {
+      case 'analysis':
+        return <AnalysisTab />;
       case 'schema':
         return <SchemaTab dbType={dbType} />;
-      case 'data':
-        return <SampleDataTab />;
-      case 'api':
-        return <APIEndpointsTab />;
+      case 'implementation':
+        return <ImplementationTab />;
+      case 'validation':
+        return <ValidationTab />;
       case 'visualization':
         return <VisualizationTab />;
       default:
