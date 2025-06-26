@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import GenerationView from './components/GenerationView';
+import { Settings } from './components/Settings';
 import { GenerationProvider, DBCoachMode } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
 import useGeneration from './hooks/useGeneration';
@@ -23,11 +25,16 @@ function AppContent() {
 
   return (
     <div className="min-h-screen">
-      {appState === 'landing' ? (
-        <LandingPage onGenerate={handleGenerate} />
-      ) : (
-        <GenerationView onBack={handleBack} />
-      )}
+      <Routes>
+        <Route path="/" element={
+          appState === 'landing' ? (
+            <LandingPage onGenerate={handleGenerate} />
+          ) : (
+            <GenerationView onBack={handleBack} />
+          )
+        } />
+        <Route path="/settings/*" element={<Settings />} />
+      </Routes>
     </div>
   );
 }
@@ -35,9 +42,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <GenerationProvider>
-        <AppContent />
-      </GenerationProvider>
+      <Router>
+        <GenerationProvider>
+          <AppContent />
+        </GenerationProvider>
+      </Router>
     </AuthProvider>
   );
 }

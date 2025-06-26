@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { User, LogOut, Settings, Crown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthModal from './AuthModal';
 
 const AuthButton: React.FC = () => {
   const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
+    setShowUserMenu(false);
+  };
+
+  const handleNavigateToSettings = () => {
+    navigate('/settings');
     setShowUserMenu(false);
   };
 
@@ -73,7 +80,10 @@ const AuthButton: React.FC = () => {
                   <span>Upgrade to Pro</span>
                 </button>
                 
-                <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors">
+                <button 
+                  onClick={handleNavigateToSettings}
+                  className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
+                >
                   <Settings className="w-4 h-4" />
                   <span>Account Settings</span>
                 </button>
