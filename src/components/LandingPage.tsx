@@ -165,53 +165,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                   </div>
                 </div>
 
-                {/* Generate button with distinctive designs */}
-                {mode === 'dbcoach' ? (
-                  // DBCoach Pro Button - Premium multi-gradient with sophisticated effects
-                  <button
-                    type="submit"
-                    disabled={!prompt.trim()}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                    className={`w-full p-4 rounded-xl text-white font-semibold transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group ${
-                      prompt.trim() 
-                        ? 'bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 hover:from-purple-500 hover:via-blue-500 hover:to-indigo-600 shadow-lg hover:shadow-2xl hover:shadow-purple-500/25' 
-                        : 'bg-slate-700 cursor-not-allowed opacity-50'
-                    } ${
-                      isHovered && prompt.trim() ? 'transform scale-[1.02] shadow-2xl shadow-blue-500/30' : ''
-                    }`}
-                  >
-                    {/* Premium gradient overlay effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                    
-                    {/* Content */}
-                    <Bot className="w-5 h-5 relative z-10" />
-                    <span className="relative z-10">Generate with DBCoach Pro</span>
-                    <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform duration-200" />
-                    
-                    {/* Animated border glow */}
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-400/20 via-blue-400/20 to-indigo-400/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </button>
-                ) : (
-                  // Standard Button - Clean and elegant with purple accent
-                  <button
-                    type="submit"
-                    disabled={!prompt.trim()}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                    className={`w-full p-4 rounded-xl text-white font-semibold transition-all duration-200 flex items-center justify-center space-x-3 ${
-                      prompt.trim() 
-                        ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 shadow-lg hover:shadow-purple-500/25' 
-                        : 'bg-slate-700 cursor-not-allowed opacity-50'
-                    } ${
-                      isHovered && prompt.trim() ? 'transform scale-[1.02]' : ''
-                    }`}
-                  >
-                    <Zap className="w-5 h-5" />
-                    <span>Generate Database Design</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-                )}
+                {/* Generate button */}
+                <button
+                  type="submit"
+                  disabled={!prompt.trim()}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                  className={`w-full p-4 bg-gradient-to-r ${
+                    mode === 'dbcoach' 
+                      ? 'from-purple-600 via-blue-600 to-purple-700 hover:from-purple-500 hover:via-blue-500 hover:to-purple-600' 
+                      : 'from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600'
+                  } disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 ${
+                    isHovered && prompt.trim() ? 'shadow-lg shadow-purple-500/25 transform scale-[1.02]' : ''
+                  }`}
+                >
+                  {mode === 'dbcoach' ? <Bot className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
+                  <span>{mode === 'dbcoach' ? 'Generate with DBCoach Pro' : 'Generate Database Design'}</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </form>
 
               {/* Help text */}
