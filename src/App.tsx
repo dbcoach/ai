@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LandingPage from './components/LandingPage';
 import GenerationView from './components/GenerationView';
 import { Settings } from './components/Settings';
+import { ResultsPage } from './components/results/ResultsPage';
 import { GenerationProvider, DBCoachMode } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
 import useGeneration from './hooks/useGeneration';
@@ -33,6 +34,7 @@ function AppContent() {
             <GenerationView onBack={handleBack} />
           )
         } />
+        <Route path="/results" element={<ResultsPage />} />
         <Route path="/settings/*" element={<Settings />} />
       </Routes>
     </div>

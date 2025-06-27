@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Zap, ArrowRight, Bot, Sparkles } from 'lucide-react';
+import { Database, Zap, ArrowRight, Bot, Sparkles, FileText, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { DBCoachMode } from '../context/GenerationContext';
 import AuthButton from './auth/AuthButton';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LandingPageProps {
   onGenerate: (prompt: string, dbType: string, mode?: DBCoachMode) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
+  const { user } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [dbType, setDbType] = useState('SQL');
   const [mode, setMode] = useState<DBCoachMode>('dbcoach');
@@ -56,7 +59,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
       {/* Gradient mesh overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-blue-500/10"></div>
 
-      {/* Header with brand and auth */}
+      {/* Header with brand, navigation and auth */}
       <div className="relative z-10 flex justify-between items-center mb-6">
         <div 
           className="flex items-center space-x-3 cursor-pointer group"
@@ -73,8 +76,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
           </span>
         </div>
         
-        {/* Auth Button */}
-        <AuthButton />
+        {/* Navigation Menu */}
+        <div className="flex items-center space-x-6">
+          {user && (
+            <>
+              <Link 
+                to="/results" 
+                className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700/50"
+              >
+                <FileText className="w-4 h-4" />
+                <span>My Results</span>
+              </Link>
+              <Link 
+                to="/settings" 
+                className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700/50"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Settings</span>
+              </Link>
+            </>
+          )}
+          
+          {/* Auth Button */}
+          <AuthButton />
+        </div>
       </div>
 
       {/* Main content - centered and filling remaining space */}
