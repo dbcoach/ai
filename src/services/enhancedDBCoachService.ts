@@ -301,7 +301,7 @@ When uncertain, internally process:
     
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite-preview-06-17',
       generationConfig: {
         temperature: 0.1, // Lower temperature for more consistent technical outputs
         topP: 0.8,
