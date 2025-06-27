@@ -14,6 +14,8 @@ interface GenerationState {
   currentStep: TabType | null;
   completedSteps: Set<TabType>;
   generatedContent: Map<TabType, UnifiedGenerationStep>;
+  // Store individual generation steps to prevent overwriting
+  generationSteps: Map<string, UnifiedGenerationStep>;
   dbCoachSteps: DBCoachStep[];
   reasoningMessages: Array<{
     id: string;
@@ -46,6 +48,7 @@ const initialState: GenerationState = {
   currentStep: null,
   completedSteps: new Set(),
   generatedContent: new Map(),
+  generationSteps: new Map(),
   dbCoachSteps: [],
   reasoningMessages: [],
   error: null,
@@ -108,6 +111,10 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
     case 'COMPLETE_STEP': {
       const step = action.payload as UnifiedGenerationStep;
       const newContent = new Map(state.generatedContent);
+      const newGenerationSteps = new Map(state.generationSteps);
+      
+      // Store individual step in generationSteps to prevent data loss
+      newGenerationSteps.set(step.type, step);
       
       // Map DBCoach steps to tab types
       if ('agent' in step) {
@@ -121,12 +128,13 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
         return {
           ...state,
           generatedContent: newContent,
+          generationSteps: newGenerationSteps,
           completedSteps: newCompletedSteps,
           isGenerating: newCompletedSteps.size < 5, // All modes now use 5 tabs
           currentStep: newCompletedSteps.size < 5 ? tabType : null
         };
       } else {
-        // Standard mode - map old 4 steps to new 5-tab structure
+        // Standard mode - handle content combining for implementation tab
         const tabMapping: Record<string, TabType> = {
           'schema': 'schema',
           'data': 'implementation', // Sample data goes to implementation tab
@@ -159,7 +167,60 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
           newContent.set('validation', validationStep);
         }
         
-        newContent.set(tabType, step);
+        // Handle implementation tab content combining
+        if (tabType === 'implementation') {
+          const existingContent = newContent.get('implementation');
+          
+          if (existingContent) {
+            // Combine content from both data and api steps
+            const dataStep = newGenerationSteps.get('data');
+            const apiStep = newGenerationSteps.get('api');
+            
+            let combinedContent = '# Implementation Package\n\n';
+            
+            if (dataStep) {
+              combinedContent += `## Sample Data\n\n${dataStep.content}\n\n`;
+            }
+            
+            if (apiStep) {
+              combinedContent += `## API Endpoints\n\n${apiStep.content}\n\n`;
+            }
+            
+            // If current step is being added
+            if (step.type === 'data') {
+              combinedContent = combinedContent.replace('## Sample Data\n\n\n\n', `## Sample Data\n\n${step.content}\n\n`);
+            } else if (step.type === 'api') {
+              combinedContent = combinedContent.replace('## API Endpoints\n\n\n\n', `## API Endpoints\n\n${step.content}\n\n`);
+            }
+            
+            const combinedStep: UnifiedGenerationStep = {
+              type: 'implementation',
+              title: 'Implementation Package',
+              content: combinedContent,
+              reasoning: `Combined ${step.type} content with existing implementation content`
+            };
+            
+            newContent.set(tabType, combinedStep);
+          } else {
+            // First implementation content - create structured format
+            const structuredContent = step.type === 'data' 
+              ? `# Implementation Package\n\n## Sample Data\n\n${step.content}\n\n## API Endpoints\n\n_API endpoints will be generated next..._\n\n`
+              : `# Implementation Package\n\n## Sample Data\n\n_Sample data has been generated. Check the Sample Data section._\n\n## API Endpoints\n\n${step.content}\n\n`;
+            
+            const structuredStep: UnifiedGenerationStep = {
+              type: 'implementation',
+              title: 'Implementation Package',
+              content: structuredContent,
+              reasoning: step.reasoning
+            };
+            
+            newContent.set(tabType, structuredStep);
+          }
+        } else {
+          // For non-implementation tabs, set content directly
+          newContent.set(tabType, step);
+        }
+        
         const newCompletedSteps = new Set([...state.completedSteps]);
         
         // Add the appropriate completed steps
@@ -176,6 +237,7 @@ function generationReducer(state: GenerationState, action: GenerationAction): Ge
         return {
           ...state,
           generatedContent: newContent,
+          generationSteps: newGenerationSteps,
           completedSteps: newCompletedSteps,
           isGenerating: newCompletedSteps.size < 5, // Standard mode now has 5 tabs
           currentStep: newCompletedSteps.size < 5 ? state.currentStep : null
@@ -226,6 +288,7 @@ interface GenerationContextType {
   resetGeneration: () => void;
   isStepComplete: (step: TabType) => boolean;
   getStepContent: (step: TabType) => UnifiedGenerationStep | undefined;
+  getGenerationStep: (stepType: string) => UnifiedGenerationStep | undefined;
 }
 
 const GenerationContext = createContext<GenerationContextType | undefined>(undefined);
@@ -343,12 +406,17 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     return state.generatedContent.get(step);
   };
 
+  const getGenerationStep = (stepType: string): UnifiedGenerationStep | undefined => {
+    return state.generationSteps.get(stepType);
+  };
+
   const contextValue: GenerationContextType = {
     state,
     startGeneration,
     resetGeneration,
     isStepComplete,
-    getStepContent
+    getStepContent,
+    getGenerationStep
   };
 
   return (

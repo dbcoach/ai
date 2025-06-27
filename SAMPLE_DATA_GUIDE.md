@@ -153,32 +153,43 @@ Each sample project includes:
 ### AI-Generated Sample Data Issues
 
 #### "Sample data section not found" Message
-This message appears when the AI-generated implementation package doesn't contain a clearly marked sample data section. This can happen if:
-- **Standard Mode**: The AI didn't structure the content with clear section headers
-- **DBCoach Pro Mode**: Sample data is embedded within other sections
-- **Generation incomplete**: The implementation step didn't finish successfully
+~~This issue has been **FIXED** in the latest version.~~ The application now properly handles sample data storage and retrieval.
 
-**Solutions:**
-1. **Check the Overview section**: Sample data might be in the general implementation content
-2. **Look for INSERT statements**: Search for SQL INSERT commands in any section
-3. **Try regenerating**: Start a new generation with more specific requirements
-4. **Use different keywords**: Look for "Test Data", "Example Data", or "Mock Data" sections
+**Previous Issue**: Sample data was being overwritten by API content due to both mapping to the same implementation tab.
+
+**Fix Applied**: 
+- Individual generation steps are now stored separately to prevent data loss
+- Implementation tab combines content from both sample data and API steps
+- Direct fallback access to sample data when extraction from combined content fails
+- Enhanced error messages and user guidance
+
+**If you still see this message** (rare cases):
+- **Generation incomplete**: The implementation step didn't finish successfully  
+- **API key issues**: Check your Gemini API key configuration
+- **Try regenerating**: Start a new generation with more specific requirements
 
 #### **No sample data generated**
-- **Ensure AI generation completed**: All 5 tabs should show completed status
-- **Check for errors**: Look at the AI Reasoning panel for any error messages
-- **Verify API key**: Ensure your Gemini API key is correctly configured
-- **Try specific prompts**: Include phrases like "with sample data" or "include test records"
+~~This issue has been **FIXED**.~~ Sample data is now reliably generated and accessible.
+
+**If sample data is still missing**:
+- **Check the blue information box**: The Sample Data section now shows a helpful notice when data is found
+- **Verify API key**: Ensure your Gemini API key is correctly configured  
+- **Check AI Reasoning panel**: Look for any error messages during generation
+- **Try specific prompts**: Include phrases like "with sample data" or "include realistic test records"
 
 #### **Generic or unrealistic data**
 - **Be more specific**: Include business context, user types, and data relationships
-- **Mention scale**: Specify expected number of users, transactions, or records
+- **Mention scale**: Specify expected number of users, transactions, or records  
 - **Include domain details**: Describe your specific industry or use case
+- **Example**: Instead of "blog app", try "travel blog platform with 1000 users, comments, categories, and user-generated content"
 
 #### **Sample data doesn't match schema**
-- **Check generation order**: Ensure both schema and implementation tabs completed successfully
-- **Regenerate implementation**: Sometimes the implementation step needs to be rerun
-- **Verify relationships**: Complex foreign key relationships may need manual adjustment
+~~This issue has been **LARGELY FIXED**.~~ Sample data now properly references the generated schema.
+
+**If there are still mismatches**:
+- **Regenerate once**: The new system is more reliable, try regenerating the entire design
+- **Check complex relationships**: Very complex foreign key relationships may need manual adjustment
+- **Verify data types**: Ensure the sample data matches your specified database type (SQL/NoSQL/Vector)
 
 ### Interactive Generator Issues
 - **Slow generation**: Reduce record count or refresh the page

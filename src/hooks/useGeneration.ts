@@ -22,6 +22,7 @@ export function useGeneration() {
     // Utilities
     isStepComplete: context.isStepComplete,
     getStepContent: context.getStepContent,
+    getGenerationStep: context.getGenerationStep,
     
     // Progress tracking
     getProgress: () => {

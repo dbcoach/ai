@@ -3,7 +3,7 @@ import { Copy, Download, Code, Database, Wrench } from 'lucide-react';
 import useGeneration from '../../hooks/useGeneration';
 
 const ImplementationTab: React.FC = () => {
-  const { getStepContent } = useGeneration();
+  const { getStepContent, getGenerationStep } = useGeneration();
   const content = getStepContent('implementation');
   const [selectedSection, setSelectedSection] = useState<'overview' | 'migrations' | 'data' | 'api' | 'monitoring'>('overview');
 
@@ -106,19 +106,38 @@ const ImplementationTab: React.FC = () => {
       }
 
       case 'data': {
-        const dataContent = extractSection(fullContent, 'Sample Data') || 
-                           extractSection(fullContent, 'Test Data') ||
-                           extractSection(fullContent, 'INSERT');
+        // First try to extract from combined content
+        let dataContent = extractSection(fullContent, 'Sample Data') || 
+                         extractSection(fullContent, 'Test Data') ||
+                         extractSection(fullContent, 'INSERT');
+        
+        // If not found, try to get direct sample data step
+        if (!dataContent) {
+          const sampleDataStep = getGenerationStep('data');
+          if (sampleDataStep) {
+            dataContent = sampleDataStep.content;
+          }
+        }
+        
         return (
           <div className="space-y-4">
             {dataContent ? (
-              <pre className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 overflow-auto">
-                {dataContent}
-              </pre>
+              <div>
+                <div className="mb-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
+                  <p className="text-blue-300 text-sm">
+                    <Code className="w-4 h-4 inline mr-2" />
+                    Sample data ready to use. Copy the SQL statements below and run them in your database.
+                  </p>
+                </div>
+                <pre className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 overflow-auto">
+                  {dataContent}
+                </pre>
+              </div>
             ) : (
               <div className="text-slate-400 text-center py-8">
                 <Code className="w-8 h-8 mx-auto mb-2" />
-                <p>Sample data section not found in the implementation package</p>
+                <p>Sample data not found. Please regenerate the implementation or try standard mode.</p>
+                <p className="text-sm mt-2">Sample data is automatically generated in standard mode.</p>
               </div>
             )}
           </div>
@@ -126,19 +145,38 @@ const ImplementationTab: React.FC = () => {
       }
 
       case 'api': {
-        const apiContent = extractSection(fullContent, 'API') || 
-                          extractSection(fullContent, 'Endpoint') ||
-                          extractSection(fullContent, 'CRUD');
+        // First try to extract from combined content
+        let apiContent = extractSection(fullContent, 'API') || 
+                        extractSection(fullContent, 'Endpoint') ||
+                        extractSection(fullContent, 'CRUD');
+        
+        // If not found, try to get direct API step
+        if (!apiContent) {
+          const apiStep = getGenerationStep('api');
+          if (apiStep) {
+            apiContent = apiStep.content;
+          }
+        }
+        
         return (
           <div className="space-y-4">
             {apiContent ? (
-              <pre className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 overflow-auto">
-                {apiContent}
-              </pre>
+              <div>
+                <div className="mb-4 p-3 bg-green-900/20 border border-green-700/30 rounded-lg">
+                  <p className="text-green-300 text-sm">
+                    <Database className="w-4 h-4 inline mr-2" />
+                    REST API endpoints with full CRUD operations for your database.
+                  </p>
+                </div>
+                <pre className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 overflow-auto">
+                  {apiContent}
+                </pre>
+              </div>
             ) : (
               <div className="text-slate-400 text-center py-8">
                 <Code className="w-8 h-8 mx-auto mb-2" />
-                <p>API examples section not found in the implementation package</p>
+                <p>API examples not found. Please regenerate the implementation or try standard mode.</p>
+                <p className="text-sm mt-2">API endpoints are automatically generated in standard mode.</p>
               </div>
             )}
           </div>
