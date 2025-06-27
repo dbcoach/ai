@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase';
-import CryptoJS from 'crypto-js';
 
 export interface ApiKey {
   id: string;
@@ -70,26 +69,67 @@ class ApiKeyService {
   /**
    * Hash API key using SHA-256 with salt
    */
-  private hashApiKey(apiKey: string): string {
-    const salt = CryptoJS.lib.WordArray.random(128/8);
-    const hash = CryptoJS.PBKDF2(apiKey, salt, {
-      keySize: 256/32,
-      iterations: 10000
-    });
-    return salt.toString() + ':' + hash.toString();
+  private async hashApiKey(apiKey: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const keyData = encoder.encode(apiKey);
+    
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    );
+    
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 10000,
+        hash: 'SHA-256'
+      },
+      key,
+      256
+    );
+    
+    const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+    const hashHex = Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return saltHex + ':' + hashHex;
   }
 
   /**
    * Verify API key against stored hash
    */
-  private verifyApiKey(apiKey: string, storedHash: string): boolean {
+  private async verifyApiKey(apiKey: string, storedHash: string): Promise<boolean> {
     try {
-      const [salt, hash] = storedHash.split(':');
-      const computedHash = CryptoJS.PBKDF2(apiKey, CryptoJS.enc.Hex.parse(salt), {
-        keySize: 256/32,
-        iterations: 10000
-      });
-      return computedHash.toString() === hash;
+      const [saltHex, hashHex] = storedHash.split(':');
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(apiKey);
+      const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+      
+      const key = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits']
+      );
+      
+      const derivedBits = await crypto.subtle.deriveBits(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 10000,
+          hash: 'SHA-256'
+        },
+        key,
+        256
+      );
+      
+      const computedHashHex = Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, '0')).join('');
+      return computedHashHex === hashHex;
     } catch (error) {
       console.error('Error verifying API key:', error);
       return false;
@@ -183,7 +223,7 @@ class ApiKeyService {
   async createApiKey(userId: string, request: CreateApiKeyRequest): Promise<{ apiKey: string; keyData: ApiKey }> {
     try {
       const rawApiKey = this.generateSecureApiKey();
-      const keyHash = this.hashApiKey(rawApiKey);
+      const keyHash = await this.hashApiKey(rawApiKey);
       const keyPreview = rawApiKey.substring(0, 12) + '...';
       
       const expiresAt = request.expires_in_days 
@@ -247,7 +287,7 @@ class ApiKeyService {
       // Find matching key by verifying hash
       let matchedKey: ApiKey | null = null;
       for (const key of apiKeys || []) {
-        if (this.verifyApiKey(apiKey, key.key_hash)) {
+        if (await this.verifyApiKey(apiKey, key.key_hash)) {
           matchedKey = key;
           break;
         }
@@ -336,7 +376,7 @@ class ApiKeyService {
   async rotateApiKey(userId: string, keyId: string): Promise<string> {
     try {
       const newRawKey = this.generateSecureApiKey();
-      const newKeyHash = this.hashApiKey(newRawKey);
+      const newKeyHash = await this.hashApiKey(newRawKey);
       const newKeyPreview = newRawKey.substring(0, 12) + '...';
 
       const { error } = await supabase
