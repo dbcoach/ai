@@ -4,6 +4,7 @@ import LandingPage from './components/LandingPage';
 import GenerationView from './components/GenerationView';
 import { Settings } from './components/Settings';
 import { ResultsPage } from './components/results/ResultsPage';
+import { DatabaseProjectsPage } from './components/projects/DatabaseProjectsPage';
 import { GenerationProvider, DBCoachMode } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
 import useGeneration from './hooks/useGeneration';
@@ -35,6 +36,7 @@ function AppContent() {
           )
         } />
         <Route path="/results" element={<ResultsPage />} />
+        <Route path="/projects" element={<DatabaseProjectsPage />} />
         <Route path="/settings/*" element={<Settings />} />
       </Routes>
     </div>
