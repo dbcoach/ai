@@ -2,16 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { resultsService, UserResult } from '../../services/resultsService';
 import { 
-  XMarkIcon, 
-  StarIcon, 
-  PencilIcon,
-  TrashIcon,
-  DocumentArrowDownIcon,
-  ClipboardDocumentIcon,
-  EyeIcon,
-  EyeSlashIcon
-} from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+  X, 
+  Star, 
+  Edit,
+  Trash2,
+  Download,
+  Copy,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
 interface ResultDetailsModalProps {
   result: UserResult;
@@ -287,11 +286,7 @@ export function ResultDetailsModal({
                       onClick={handleToggleFavorite}
                       className="flex-shrink-0 p-1 hover:bg-slate-700 rounded transition-colors"
                     >
-                      {result.is_favorite ? (
-                        <StarSolidIcon className="h-6 w-6 text-yellow-400" />
-                      ) : (
-                        <StarIcon className="h-6 w-6 text-slate-500 hover:text-yellow-400" />
-                      )}
+                      <Star className={`h-6 w-6 ${result.is_favorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-500 hover:text-yellow-400'}`} />
                     </button>
                   </div>
                   {result.description && (
@@ -309,21 +304,21 @@ export function ResultDetailsModal({
                     className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
                     title="Edit"
                   >
-                    <PencilIcon className="h-5 w-5" />
+                    <Edit className="h-5 w-5" />
                   </button>
                   <button
                     onClick={handleExport}
                     className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
                     title="Export"
                   >
-                    <DocumentArrowDownIcon className="h-5 w-5" />
+                    <Download className="h-5 w-5" />
                   </button>
                   <button
                     onClick={handleDelete}
                     className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
                     title="Delete"
                   >
-                    <TrashIcon className="h-5 w-5" />
+                    <Trash2 className="h-5 w-5" />
                   </button>
                 </>
               )}
@@ -331,7 +326,7 @@ export function ResultDetailsModal({
                 onClick={onClose}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
               >
-                <XMarkIcon className="h-6 w-6" />
+                <X className="h-6 w-6" />
               </button>
             </div>
           </div>
@@ -380,12 +375,12 @@ export function ResultDetailsModal({
                   >
                     {showRawData ? (
                       <>
-                        <EyeIcon className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                         <span>Table View</span>
                       </>
                     ) : (
                       <>
-                        <EyeSlashIcon className="h-4 w-4" />
+                        <EyeOff className="h-4 w-4" />
                         <span>Raw JSON</span>
                       </>
                     )}
@@ -395,7 +390,7 @@ export function ResultDetailsModal({
                   onClick={handleCopyData}
                   className="flex items-center space-x-2 px-3 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded text-sm transition-colors"
                 >
-                  <ClipboardDocumentIcon className="h-4 w-4" />
+                  <Copy className="h-4 w-4" />
                   <span>Copy</span>
                 </button>
               </div>

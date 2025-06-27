@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { resultsService, ResultCategory, ResultTag } from '../../services/resultsService';
-import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { X, Plus } from 'lucide-react';
 
 interface CreateResultModalProps {
   onClose: () => void;
@@ -157,7 +157,7 @@ export function CreateResultModal({ onClose, onResultCreated }: CreateResultModa
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700"
             >
-              <XMarkIcon className="h-6 w-6" />
+              <X className="h-6 w-6" />
             </button>
           </div>
 
@@ -259,7 +259,7 @@ export function CreateResultModal({ onClose, onResultCreated }: CreateResultModa
                         onClick={handleAddCategory}
                         className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
                       >
-                        <PlusIcon className="h-4 w-4" />
+                        <Plus className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -295,7 +295,7 @@ export function CreateResultModal({ onClose, onResultCreated }: CreateResultModa
                         onClick={handleAddTag}
                         className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
                       >
-                        <PlusIcon className="h-4 w-4" />
+                        <Plus className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
