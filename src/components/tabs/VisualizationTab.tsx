@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Download, Eye, Database, BarChart3, Network } from 'lucide-react';
+import { Eye, Database, BarChart3, Network } from 'lucide-react';
 import useGeneration from '../../hooks/useGeneration';
 import { DatabaseERDiagram } from '../visualizations/DatabaseERDiagram';
 import { ProgressChart } from '../charts/ProgressChart';

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { GenerationStep, GenerationProgress, geminiService } from '../services/geminiService';
 import { GenerationStep as DBCoachStep, GenerationProgress as DBCoachProgress, enhancedDBCoachService } from '../services/enhancedDBCoachService';
+import { databaseProjectsService } from '../services/databaseProjectsService';
+import { supabase } from '../lib/supabase';
 
 export type TabType = 'analysis' | 'schema' | 'implementation' | 'validation' | 'visualization';
 export type DBCoachMode = 'standard' | 'dbcoach';
@@ -291,6 +293,66 @@ interface GenerationContextType {
   getGenerationStep: (stepType: string) => UnifiedGenerationStep | undefined;
 }
 
+// Helper function to generate intelligent project titles
+function generateProjectTitle(prompt: string, dbType: string): string {
+  const promptLower = prompt.toLowerCase();
+  
+  // Extract domain keywords
+  const domainPatterns = {
+    'e-commerce': ['shop', 'store', 'product', 'cart', 'order', 'payment', 'inventory', 'catalog', 'ecommerce', 'e-commerce'],
+    'blog': ['blog', 'post', 'article', 'author', 'comment', 'category', 'tag', 'publish'],
+    'social': ['social', 'user', 'post', 'comment', 'like', 'follow', 'feed', 'message', 'friend'],
+    'crm': ['customer', 'lead', 'contact', 'sales', 'deal', 'opportunity', 'client'],
+    'education': ['student', 'course', 'lesson', 'grade', 'assignment', 'teacher', 'class', 'school'],
+    'healthcare': ['patient', 'doctor', 'appointment', 'medical', 'health', 'treatment', 'clinic'],
+    'finance': ['transaction', 'account', 'balance', 'payment', 'bank', 'finance', 'money', 'budget'],
+    'inventory': ['inventory', 'stock', 'warehouse', 'supply', 'product', 'asset'],
+    'project': ['project', 'task', 'milestone', 'team', 'collaboration', 'workflow'],
+    'analytics': ['analytics', 'metric', 'report', 'dashboard', 'data', 'insight'],
+  };
+  
+  // Find matching domain
+  let detectedDomain = '';
+  for (const [domain, keywords] of Object.entries(domainPatterns)) {
+    if (keywords.some(keyword => promptLower.includes(keyword))) {
+      detectedDomain = domain;
+      break;
+    }
+  }
+  
+  // Extract main entities from prompt
+  const entityWords = prompt.split(' ')
+    .filter(word => word.length > 3)
+    .filter(word => !['with', 'that', 'have', 'will', 'need', 'want', 'create', 'build', 'make', 'design'].includes(word.toLowerCase()))
+    .slice(0, 3);
+  
+  // Generate title based on detected patterns
+  if (detectedDomain) {
+    const domainTitles = {
+      'e-commerce': 'E-Commerce Platform',
+      'blog': 'Blog Management System',
+      'social': 'Social Network Platform',
+      'crm': 'Customer Relationship Manager',
+      'education': 'Education Management System',
+      'healthcare': 'Healthcare Management System',
+      'finance': 'Financial Management System',
+      'inventory': 'Inventory Management System',
+      'project': 'Project Management Platform',
+      'analytics': 'Analytics Dashboard',
+    };
+    return `${domainTitles[detectedDomain]} (${dbType})`;
+  }
+  
+  // Fallback: use first meaningful words from prompt
+  if (entityWords.length > 0) {
+    const mainEntity = entityWords[0].charAt(0).toUpperCase() + entityWords[0].slice(1);
+    return `${mainEntity} Database (${dbType})`;
+  }
+  
+  // Final fallback
+  return `Database Project (${dbType})`;
+}
+
 const GenerationContext = createContext<GenerationContextType | undefined>(undefined);
 
 export function GenerationProvider({ children }: { children: ReactNode }) {
@@ -300,6 +362,14 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'START_GENERATION', payload: { prompt, dbType, mode } });
     
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      let steps: (GenerationStep | DBCoachStep)[] = [];
+
       if (mode === 'dbcoach') {
         // Use Enhanced DBCoach service
         const isConnected = await enhancedDBCoachService.testConnection();
@@ -307,7 +377,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           throw new Error('Unable to connect to Enhanced DBCoach API. Please check your API key and network connection.');
         }
         
-        await enhancedDBCoachService.generateDatabaseDesign(
+        steps = await enhancedDBCoachService.generateDatabaseDesign(
           prompt,
           dbType,
           (progress: DBCoachProgress) => {
@@ -320,30 +390,31 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
               }
             });
           }
-        ).then((steps: DBCoachStep[]) => {
-          steps.forEach(step => {
-            dispatch({ type: 'ADD_DBCOACH_STEP', payload: step });
-            dispatch({ type: 'COMPLETE_STEP', payload: step });
-          });
-          
-          // Add synthetic visualization step for DBCoach mode
-          const visualizationStep: DBCoachStep = {
-            type: 'visualization',
-            title: 'Database Visualization',
-            content: `# Database Structure Visualization\n\nThe database design has been completed with the following components:\n\n- Requirements analysis\n- Schema design\n- Implementation package\n- Quality validation\n\nVisual representation of the entity relationships and database structure can be generated from the schema design.`,
-            reasoning: 'Visualization prepared based on completed design',
-            agent: 'DBCoach Master',
-            status: 'completed'
-          };
-          dispatch({ type: 'COMPLETE_STEP', payload: visualizationStep });
-          
-          dispatch({ 
-            type: 'ADD_REASONING_MESSAGE', 
-            payload: { 
-              content: '✅ DBCoach analysis complete! Enterprise-grade database design delivered with multi-agent validation.',
-              agent: 'DBCoach Master'
-            }
-          });
+        );
+
+        steps.forEach(step => {
+          dispatch({ type: 'ADD_DBCOACH_STEP', payload: step as DBCoachStep });
+          dispatch({ type: 'COMPLETE_STEP', payload: step });
+        });
+        
+        // Add synthetic visualization step for DBCoach mode
+        const visualizationStep: DBCoachStep = {
+          type: 'visualization',
+          title: 'Database Visualization',
+          content: `# Database Structure Visualization\n\nThe database design has been completed with the following components:\n\n- Requirements analysis\n- Schema design\n- Implementation package\n- Quality validation\n\nVisual representation of the entity relationships and database structure can be generated from the schema design.`,
+          reasoning: 'Visualization prepared based on completed design',
+          agent: 'DBCoach Master',
+          status: 'completed'
+        };
+        dispatch({ type: 'COMPLETE_STEP', payload: visualizationStep });
+        steps.push(visualizationStep);
+        
+        dispatch({ 
+          type: 'ADD_REASONING_MESSAGE', 
+          payload: { 
+            content: '✅ DBCoach analysis complete! Enterprise-grade database design delivered with multi-agent validation.',
+            agent: 'DBCoach Master'
+          }
         });
       } else {
         // Use standard Gemini service
@@ -352,23 +423,84 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           throw new Error('Unable to connect to Gemini API. Please check your API key and network connection.');
         }
         
-        await geminiService.generateDatabaseDesign(
+        steps = await geminiService.generateDatabaseDesign(
           prompt,
           dbType,
           (progress: GenerationProgress) => {
             dispatch({ type: 'UPDATE_PROGRESS', payload: progress });
             dispatch({ type: 'ADD_REASONING_MESSAGE', payload: { content: progress.reasoning } });
           }
-        ).then((steps: GenerationStep[]) => {
-          steps.forEach(step => {
-            dispatch({ type: 'COMPLETE_STEP', payload: step });
-          });
+        );
+
+        steps.forEach(step => {
+          dispatch({ type: 'COMPLETE_STEP', payload: step });
+        });
+        
+        dispatch({ 
+          type: 'ADD_REASONING_MESSAGE', 
+          payload: { content: '✅ Database design complete! All components have been generated successfully.' }
+        });
+      }
+
+      // Create project automatically after successful generation
+      if (steps.length > 0) {
+        try {
+          const projectTitle = generateProjectTitle(prompt, dbType);
           
+          const project = await databaseProjectsService.createProject(user.id, {
+            database_name: projectTitle,
+            database_type: dbType as any,
+            description: prompt,
+            metadata: {
+              generation_mode: mode,
+              generated_steps: steps,
+              reasoning_messages: state.reasoningMessages,
+              generated_at: new Date().toISOString()
+            }
+          });
+
+          // Create initial session with the generation results
+          const session = await databaseProjectsService.createSession({
+            project_id: project.id,
+            session_name: "Initial Generation",
+            description: `Database generated using ${mode === 'dbcoach' ? 'DBCoach Pro' : 'Standard'} mode`
+          });
+
+          // Store each generation step as a query in the session
+          for (const step of steps) {
+            await databaseProjectsService.createQuery({
+              session_id: session.id,
+              project_id: project.id,
+              query_text: `Generated ${step.title}`,
+              query_type: 'OTHER',
+              results_data: {
+                title: step.title,
+                content: step.content,
+                reasoning: step.reasoning,
+                type: step.type,
+                ...(step as any).agent && { agent: (step as any).agent }
+              },
+              results_format: 'json',
+              success: true
+            });
+          }
+
           dispatch({ 
             type: 'ADD_REASONING_MESSAGE', 
-            payload: { content: '✅ Database design complete! All components have been generated successfully.' }
+            payload: { 
+              content: `📁 Project "${projectTitle}" created successfully! Redirecting to projects...`
+            }
           });
-        });
+        } catch (projectError) {
+          console.error('Failed to create project:', projectError);
+          dispatch({ 
+            type: 'ADD_REASONING_MESSAGE', 
+            payload: { 
+              content: '⚠️ Generation completed but failed to save as project. Please try again.'
+            }
+          });
+          throw projectError;
+        }
       }
       
     } catch (error) {
@@ -383,6 +515,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         userFriendlyMessage = '❌ Rate Limit: Too many requests. Please wait a moment and try again.';
       } else if (errorMessage.includes('network') || errorMessage.includes('connect')) {
         userFriendlyMessage = '❌ Connection Error: Please check your internet connection and try again.';
+      } else if (errorMessage.includes('not authenticated')) {
+        userFriendlyMessage = '❌ Authentication Required: Please sign in to generate database designs.';
       } else {
         userFriendlyMessage = `❌ Generation Error: ${errorMessage}`;
       }
@@ -391,6 +525,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         type: 'ADD_REASONING_MESSAGE', 
         payload: { content: userFriendlyMessage }
       });
+      
+      throw error; // Re-throw to allow LandingPage to handle navigation
     }
   };
 

@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { databaseProjectsService, DatabaseProject, ProjectStats } from '../../services/databaseProjectsService';
 import { ProjectsList } from './ProjectsList';
 import { ProjectDetails } from './ProjectDetails';
-import { CreateProjectModal } from './CreateProjectModal';
 import ProtectedRoute from '../auth/ProtectedRoute';
 import { 
-  Plus, 
   Database,
   Activity,
   Search,
-  BarChart3
+  BarChart3,
+  Sparkles
 } from 'lucide-react';
 
 export function DatabaseProjectsPage() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<DatabaseProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<DatabaseProject | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<ProjectStats>({ 
     total_projects: 0, 
@@ -59,11 +58,6 @@ export function DatabaseProjectsPage() {
     }
   };
 
-  const handleProjectCreated = () => {
-    setShowCreateModal(false);
-    loadProjects();
-    loadStats();
-  };
 
   const handleProjectSelect = async (project: DatabaseProject) => {
     setSelectedProject(project);
@@ -163,13 +157,13 @@ export function DatabaseProjectsPage() {
           <div className="mb-6 p-4 rounded-xl bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => setShowCreateModal(true)}
+                <Link
+                  to="/"
                   className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
                 >
-                  <Plus className="h-4 w-4" />
-                  <span>New Project</span>
-                </button>
+                  <Sparkles className="h-4 w-4" />
+                  <span>Generate New Database</span>
+                </Link>
               </div>
               
               {/* Search */}
@@ -195,14 +189,6 @@ export function DatabaseProjectsPage() {
             onProjectSelect={handleProjectSelect}
             searchTerm={searchTerm}
           />
-
-          {/* Create Project Modal */}
-          {showCreateModal && (
-            <CreateProjectModal
-              onClose={() => setShowCreateModal(false)}
-              onProjectCreated={handleProjectCreated}
-            />
-          )}
         </div>
       </div>
     </ProtectedRoute>

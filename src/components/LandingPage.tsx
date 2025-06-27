@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Zap, ArrowRight, Bot, Sparkles, FileText, Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Database, Zap, ArrowRight, Bot, Sparkles, Settings } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { DBCoachMode } from '../context/GenerationContext';
 import AuthButton from './auth/AuthButton';
 import { useAuth } from '../contexts/AuthContext';
+import useGeneration from '../hooks/useGeneration';
 
-interface LandingPageProps {
-  onGenerate: (prompt: string, dbType: string, mode?: DBCoachMode) => void;
-}
-
-const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
+const LandingPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { startGeneration, isGenerating } = useGeneration();
   const [prompt, setPrompt] = useState('');
   const [dbType, setDbType] = useState('SQL');
   const [mode, setMode] = useState<DBCoachMode>('dbcoach');
@@ -27,10 +26,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (prompt.trim()) {
-      onGenerate(prompt, dbType, mode);
+    if (prompt.trim() && user) {
+      try {
+        await startGeneration(prompt, dbType, mode);
+        // After successful generation, redirect to projects
+        navigate('/projects');
+      } catch (error) {
+        console.error('Generation failed:', error);
+      }
     }
   };
 
@@ -88,13 +93,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                 <span>My Projects</span>
               </Link>
               <Link 
-                to="/results" 
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700/50"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Results</span>
-              </Link>
-              <Link 
                 to="/settings" 
                 className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700/50"
               >
@@ -115,10 +113,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
           {/* Main heading */}
           <div className="mb-12">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight leading-none">
-              What data do you want to store?
+              {user ? 'Generate Your Next Database' : 'What data do you want to store?'}
             </h1>
             <p className="text-lg md:text-xl text-slate-300 font-light opacity-90 max-w-2xl mx-auto">
-              Design Databases at the Speed of Thought
+              {user ? 'Create intelligent database designs with AI assistance' : 'Design Databases at the Speed of Thought'}
             </p>
           </div>
 
@@ -217,7 +215,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                 {/* Generate button */}
                 <button
                   type="submit"
-                  disabled={!prompt.trim()}
+                  disabled={!prompt.trim() || isGenerating || !user}
                   onMouseEnter={() => setIsHovered(true)}
                   onMouseLeave={() => setIsHovered(false)}
                   className={`w-full p-4 bg-gradient-to-r ${
@@ -225,12 +223,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGenerate }) => {
                       ? 'from-purple-600 via-blue-600 to-purple-700 hover:from-purple-500 hover:via-blue-500 hover:to-purple-600' 
                       : 'from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600'
                   } disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 ${
-                    isHovered && prompt.trim() ? 'shadow-lg shadow-purple-500/25 transform scale-[1.02]' : ''
+                    isHovered && prompt.trim() && user && !isGenerating ? 'shadow-lg shadow-purple-500/25 transform scale-[1.02]' : ''
                   }`}
                 >
-                  {mode === 'dbcoach' ? <Bot className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
-                  <span>{mode === 'dbcoach' ? 'Generate with DBCoach Pro' : 'Generate Database Design'}</span>
-                  <ArrowRight className="w-5 h-5" />
+                  {isGenerating ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      {mode === 'dbcoach' ? <Bot className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
+                      <span>{!user ? 'Sign in to Generate' : mode === 'dbcoach' ? 'Generate with DBCoach Pro' : 'Generate Database Design'}</span>
+                      {user && <ArrowRight className="w-5 h-5" />}
+                    </>
+                  )}
                 </button>
               </form>
 
