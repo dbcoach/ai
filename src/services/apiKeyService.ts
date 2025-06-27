@@ -416,7 +416,7 @@ class ApiKeyService {
         .eq('api_key_id', keyId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (totalError || todayError) {
         console.error('Error fetching usage stats:', totalError || todayError);
