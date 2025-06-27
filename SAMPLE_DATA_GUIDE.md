@@ -9,10 +9,11 @@ DB.Coach includes two distinct sample data generation features to help you work 
 ### Location & Access Path
 
 1. **Start from Landing Page**: Enter your database description and click "Generate Design"
-2. **Navigate to Results**: After AI generation completes, you'll see the Generation View with multiple tabs
-3. **Access Sample Data Tab**: 
-   - Click the "Implementation" tab (Code icon)
-   - Select the "Sample Data" section within the Implementation tab
+2. **Navigate to Results**: After AI generation completes, you'll see the Generation View with 5 tabs
+3. **Access Sample Data**: 
+   - Click the **"Implementation"** tab (Code icon)
+   - Within the Implementation tab, click the **"Sample Data"** section button
+   - The sample data will appear in a formatted code view
 
 ### AI-Generated Sample Data Features
 
@@ -22,19 +23,28 @@ DB.Coach includes two distinct sample data generation features to help you work 
 - **Proper relationships** between tables with valid foreign keys
 - **Domain-specific content** (e.g., e-commerce products, user profiles, financial transactions)
 
+#### How It's Displayed
+- **Code view with syntax highlighting** for SQL statements
+- **Line numbers** for easy reference
+- **Formatted as executable SQL** that you can copy and run
+- **Integrated within the Implementation package** alongside migrations and API examples
+
 #### Export Options
-- **Export CSV**: Download data in comma-separated values format
-- **Export JSON**: Download data in JSON format for API testing
+Currently, sample data can be:
+- **Copied to clipboard** using the Copy button in the Implementation tab
+- **Exported as part of the complete implementation package**
+- **Saved manually** by selecting and copying the formatted SQL code
 
 #### Usage Tips
 - The data is automatically generated based on your prompt and database type
 - Content reflects the complexity and scale mentioned in your initial description
 - Foreign key relationships are properly maintained
 - Data volume scales with your specified requirements
+- Look for sections labeled "Sample Data", "Test Data", or "INSERT" within the implementation content
 
 ### Navigation Path Summary
 ```
-Landing Page → Generate Design → Implementation Tab → Sample Data Section
+Landing Page → Generate Design → Implementation Tab → Sample Data Section Button
 ```
 
 ## Feature 2: Interactive Sample Data Generator Tool
@@ -141,9 +151,34 @@ Each sample project includes:
 ## Troubleshooting
 
 ### AI-Generated Sample Data Issues
-- **No data shown**: Ensure the AI generation completed successfully
-- **Generic data**: Provide more specific business context in your initial prompt
-- **Export not working**: Check browser permissions for file downloads
+
+#### "Sample data section not found" Message
+This message appears when the AI-generated implementation package doesn't contain a clearly marked sample data section. This can happen if:
+- **Standard Mode**: The AI didn't structure the content with clear section headers
+- **DBCoach Pro Mode**: Sample data is embedded within other sections
+- **Generation incomplete**: The implementation step didn't finish successfully
+
+**Solutions:**
+1. **Check the Overview section**: Sample data might be in the general implementation content
+2. **Look for INSERT statements**: Search for SQL INSERT commands in any section
+3. **Try regenerating**: Start a new generation with more specific requirements
+4. **Use different keywords**: Look for "Test Data", "Example Data", or "Mock Data" sections
+
+#### **No sample data generated**
+- **Ensure AI generation completed**: All 5 tabs should show completed status
+- **Check for errors**: Look at the AI Reasoning panel for any error messages
+- **Verify API key**: Ensure your Gemini API key is correctly configured
+- **Try specific prompts**: Include phrases like "with sample data" or "include test records"
+
+#### **Generic or unrealistic data**
+- **Be more specific**: Include business context, user types, and data relationships
+- **Mention scale**: Specify expected number of users, transactions, or records
+- **Include domain details**: Describe your specific industry or use case
+
+#### **Sample data doesn't match schema**
+- **Check generation order**: Ensure both schema and implementation tabs completed successfully
+- **Regenerate implementation**: Sometimes the implementation step needs to be rerun
+- **Verify relationships**: Complex foreign key relationships may need manual adjustment
 
 ### Interactive Generator Issues
 - **Slow generation**: Reduce record count or refresh the page
