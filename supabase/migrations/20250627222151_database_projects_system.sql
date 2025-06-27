@@ -57,20 +57,25 @@ ALTER TABLE database_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE database_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE database_queries ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for database_projects
+-- RLS Policies for database_projects (drop existing first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own projects" ON database_projects;
 CREATE POLICY "Users can view their own projects" ON database_projects
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own projects" ON database_projects;
 CREATE POLICY "Users can insert their own projects" ON database_projects
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own projects" ON database_projects;
 CREATE POLICY "Users can update their own projects" ON database_projects
   FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own projects" ON database_projects;
 CREATE POLICY "Users can delete their own projects" ON database_projects
   FOR DELETE USING (auth.uid() = user_id);
 
 -- RLS Policies for database_sessions
+DROP POLICY IF EXISTS "Users can view sessions for their projects" ON database_sessions;
 CREATE POLICY "Users can view sessions for their projects" ON database_sessions
   FOR SELECT USING (
     EXISTS (
@@ -80,6 +85,7 @@ CREATE POLICY "Users can view sessions for their projects" ON database_sessions
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert sessions for their projects" ON database_sessions;
 CREATE POLICY "Users can insert sessions for their projects" ON database_sessions
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -89,6 +95,7 @@ CREATE POLICY "Users can insert sessions for their projects" ON database_session
     )
   );
 
+DROP POLICY IF EXISTS "Users can update sessions for their projects" ON database_sessions;
 CREATE POLICY "Users can update sessions for their projects" ON database_sessions
   FOR UPDATE USING (
     EXISTS (
@@ -98,6 +105,7 @@ CREATE POLICY "Users can update sessions for their projects" ON database_session
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete sessions for their projects" ON database_sessions;
 CREATE POLICY "Users can delete sessions for their projects" ON database_sessions
   FOR DELETE USING (
     EXISTS (
@@ -108,6 +116,7 @@ CREATE POLICY "Users can delete sessions for their projects" ON database_session
   );
 
 -- RLS Policies for database_queries
+DROP POLICY IF EXISTS "Users can view queries for their projects" ON database_queries;
 CREATE POLICY "Users can view queries for their projects" ON database_queries
   FOR SELECT USING (
     EXISTS (
@@ -117,6 +126,7 @@ CREATE POLICY "Users can view queries for their projects" ON database_queries
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert queries for their projects" ON database_queries;
 CREATE POLICY "Users can insert queries for their projects" ON database_queries
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -126,6 +136,7 @@ CREATE POLICY "Users can insert queries for their projects" ON database_queries
     )
   );
 
+DROP POLICY IF EXISTS "Users can update queries for their projects" ON database_queries;
 CREATE POLICY "Users can update queries for their projects" ON database_queries
   FOR UPDATE USING (
     EXISTS (
@@ -135,6 +146,7 @@ CREATE POLICY "Users can update queries for their projects" ON database_queries
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete queries for their projects" ON database_queries;
 CREATE POLICY "Users can delete queries for their projects" ON database_queries
   FOR DELETE USING (
     EXISTS (
@@ -144,12 +156,14 @@ CREATE POLICY "Users can delete queries for their projects" ON database_queries
     )
   );
 
--- Triggers for automatic timestamp updates
+-- Triggers for automatic timestamp updates (drop existing first)
+DROP TRIGGER IF EXISTS update_database_projects_updated_at ON database_projects;
 CREATE TRIGGER update_database_projects_updated_at
   BEFORE UPDATE ON database_projects
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_database_sessions_updated_at ON database_sessions;
 CREATE TRIGGER update_database_sessions_updated_at
   BEFORE UPDATE ON database_sessions
   FOR EACH ROW
