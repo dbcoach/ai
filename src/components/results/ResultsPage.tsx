@@ -8,12 +8,12 @@ import { ResultDetailsModal } from './ResultDetailsModal';
 import { CategoryTagManager } from './CategoryTagManager';
 import ProtectedRoute from '../auth/ProtectedRoute';
 import { 
-  PlusIcon, 
-  FolderIcon, 
-  TagIcon,
-  DocumentArrowDownIcon,
-  ChartBarIcon
-} from '@heroicons/react/24/outline';
+  Plus, 
+  Folder, 
+  Tag,
+  Download,
+  BarChart3
+} from 'lucide-react';
 
 export function ResultsPage() {
   const { user } = useAuth();
@@ -131,11 +131,11 @@ export function ResultsPage() {
               {/* Storage Stats */}
               <div className="mt-4 md:mt-0 flex items-center space-x-4 text-sm text-slate-400">
                 <div className="flex items-center space-x-2">
-                  <ChartBarIcon className="h-4 w-4" />
+                  <BarChart3 className="h-4 w-4" />
                   <span>{storageStats.totalResults} results</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <DocumentArrowDownIcon className="h-4 w-4" />
+                  <Download className="h-4 w-4" />
                   <span>{formatBytes(storageStats.totalBytes)}</span>
                 </div>
               </div>
@@ -150,7 +150,7 @@ export function ResultsPage() {
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
                 >
-                  <PlusIcon className="h-4 w-4" />
+                  <Plus className="h-4 w-4" />
                   <span>Save Result</span>
                 </button>
                 
@@ -158,7 +158,7 @@ export function ResultsPage() {
                   onClick={() => setShowCategoryTagModal(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded-lg transition-colors border border-slate-600/50"
                 >
-                  <FolderIcon className="h-4 w-4" />
+                  <Folder className="h-4 w-4" />
                   <span>Categories</span>
                 </button>
                 
@@ -166,7 +166,7 @@ export function ResultsPage() {
                   onClick={() => setShowCategoryTagModal(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded-lg transition-colors border border-slate-600/50"
                 >
-                  <TagIcon className="h-4 w-4" />
+                  <Tag className="h-4 w-4" />
                   <span>Tags</span>
                 </button>
               </div>
@@ -176,7 +176,7 @@ export function ResultsPage() {
                 disabled={results.length === 0}
                 className="flex items-center space-x-2 px-4 py-2 bg-green-600/80 hover:bg-green-600 disabled:bg-slate-700/50 disabled:text-slate-500 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
               >
-                <DocumentArrowDownIcon className="h-4 w-4" />
+                <Download className="h-4 w-4" />
                 <span>Export All</span>
               </button>
             </div>

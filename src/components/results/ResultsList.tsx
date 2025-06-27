@@ -1,15 +1,14 @@
 import React from 'react';
 import { UserResult } from '../../services/resultsService';
 import { 
-  DocumentTextIcon,
-  TableCellsIcon,
-  CodeBracketIcon,
-  StarIcon,
-  EyeIcon,
-  CalendarIcon,
-  ArchiveBoxIcon
-} from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+  FileText,
+  Table,
+  Code,
+  Star,
+  Eye,
+  Calendar,
+  Archive
+} from 'lucide-react';
 
 interface ResultsListProps {
   results: UserResult[];
@@ -22,13 +21,13 @@ export function ResultsList({ results, loading, onResultSelect, onResultUpdated 
   const getFormatIcon = (format: string) => {
     switch (format) {
       case 'json':
-        return <CodeBracketIcon className="h-5 w-5 text-blue-400" />;
+        return <Code className="h-5 w-5 text-blue-400" />;
       case 'csv':
-        return <DocumentTextIcon className="h-5 w-5 text-green-400" />;
+        return <FileText className="h-5 w-5 text-green-400" />;
       case 'table':
-        return <TableCellsIcon className="h-5 w-5 text-purple-400" />;
+        return <Table className="h-5 w-5 text-purple-400" />;
       default:
-        return <DocumentTextIcon className="h-5 w-5 text-slate-400" />;
+        return <FileText className="h-5 w-5 text-slate-400" />;
     }
   };
 
@@ -75,7 +74,7 @@ export function ResultsList({ results, loading, onResultSelect, onResultUpdated 
   if (results.length === 0) {
     return (
       <div className="text-center py-12 rounded-xl bg-slate-800/30 backdrop-blur-xl border border-slate-700/50">
-        <ArchiveBoxIcon className="h-16 w-16 text-slate-500 mx-auto mb-4" />
+        <Archive className="h-16 w-16 text-slate-500 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-slate-300 mb-2">No results found</h3>
         <p className="text-slate-500">
           Start by saving your first query result or adjust your search filters.
@@ -99,11 +98,7 @@ export function ResultsList({ results, loading, onResultSelect, onResultUpdated 
                 <h3 className="text-lg font-semibold text-white truncate group-hover:text-purple-300 transition-colors">
                   {result.title}
                 </h3>
-                {result.is_favorite ? (
-                  <StarSolidIcon className="h-5 w-5 text-yellow-400 flex-shrink-0" />
-                ) : (
-                  <StarIcon className="h-5 w-5 text-slate-500 flex-shrink-0" />
-                )}
+                <Star className={`h-5 w-5 flex-shrink-0 ${result.is_favorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-500'}`} />
               </div>
 
               {/* Description */}
@@ -123,12 +118,12 @@ export function ResultsList({ results, loading, onResultSelect, onResultUpdated 
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <CalendarIcon className="h-4 w-4" />
+                  <Calendar className="h-4 w-4" />
                   <span>{formatDate(result.created_at)}</span>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <ArchiveBoxIcon className="h-4 w-4" />
+                  <Archive className="h-4 w-4" />
                   <span>{formatBytes(result.data_size_bytes)}</span>
                 </div>
 
@@ -153,7 +148,7 @@ export function ResultsList({ results, loading, onResultSelect, onResultUpdated 
             {/* Action button */}
             <div className="ml-4 flex-shrink-0">
               <button className="p-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-slate-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
-                <EyeIcon className="h-5 w-5" />
+                <Eye className="h-5 w-5" />
               </button>
             </div>
           </div>

@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { resultsService, SearchResultsParams, ResultCategory, ResultTag } from '../../services/resultsService';
 import { 
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  XMarkIcon,
-  StarIcon,
-  DocumentTextIcon,
-  TableCellsIcon,
-  CodeBracketIcon
-} from '@heroicons/react/24/outline';
+  Search,
+  Filter,
+  X,
+  Star,
+  FileText,
+  Table,
+  Code
+} from 'lucide-react';
 
 interface ResultsSearchProps {
   onSearch: (params: SearchResultsParams) => void;
@@ -99,9 +99,9 @@ export function ResultsSearch({ onSearch }: ResultsSearchProps) {
   const hasActiveFilters = query || selectedCategories.length > 0 || selectedTags.length > 0 || selectedFormat || showFavorites;
 
   const formatOptions = [
-    { value: 'json', label: 'JSON', icon: CodeBracketIcon },
-    { value: 'csv', label: 'CSV', icon: DocumentTextIcon },
-    { value: 'table', label: 'Table', icon: TableCellsIcon }
+    { value: 'json', label: 'JSON', icon: Code },
+    { value: 'csv', label: 'CSV', icon: FileText },
+    { value: 'table', label: 'Table', icon: Table }
   ];
 
   return (
@@ -109,7 +109,7 @@ export function ResultsSearch({ onSearch }: ResultsSearchProps) {
       {/* Main search bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <MagnifyingGlassIcon className="h-5 w-5 text-slate-500" />
+          <Search className="h-5 w-5 text-slate-500" />
         </div>
         <input
           type="text"
@@ -124,7 +124,7 @@ export function ResultsSearch({ onSearch }: ResultsSearchProps) {
             hasActiveFilters ? 'text-purple-400' : 'text-slate-500'
           } hover:text-purple-300 transition-colors`}
         >
-          <FunnelIcon className="h-5 w-5" />
+          <Filter className="h-5 w-5" />
         </button>
       </div>
 
@@ -143,7 +143,7 @@ export function ResultsSearch({ onSearch }: ResultsSearchProps) {
                   onClick={() => handleCategoryToggle(categoryId)}
                   className="hover:text-blue-100"
                 >
-                  <XMarkIcon className="h-3 w-3" />
+                  <X className="h-3 w-3" />
                 </button>
               </span>
             ) : null;
@@ -161,7 +161,7 @@ export function ResultsSearch({ onSearch }: ResultsSearchProps) {
                   onClick={() => handleTagToggle(tagId)}
                   className="hover:text-green-100"
                 >
-                  <XMarkIcon className="h-3 w-3" />
+                  <X className="h-3 w-3" />
                 </button>
               </span>
             ) : null;
@@ -174,20 +174,20 @@ export function ResultsSearch({ onSearch }: ResultsSearchProps) {
                 onClick={() => setSelectedFormat('')}
                 className="hover:text-purple-100"
               >
-                <XMarkIcon className="h-3 w-3" />
+                <X className="h-3 w-3" />
               </button>
             </span>
           )}
 
           {showFavorites && (
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-600/20 text-yellow-300 text-sm">
-              <StarIcon className="h-3 w-3" />
+              <Star className="h-3 w-3" />
               Favorites
               <button
                 onClick={() => setShowFavorites(false)}
                 className="hover:text-yellow-100"
               >
-                <XMarkIcon className="h-3 w-3" />
+                <X className="h-3 w-3" />
               </button>
             </span>
           )}
@@ -296,7 +296,7 @@ export function ResultsSearch({ onSearch }: ResultsSearchProps) {
                   onChange={(e) => setShowFavorites(e.target.checked)}
                   className="text-yellow-600 focus:ring-yellow-500 rounded"
                 />
-                <StarIcon className="h-4 w-4 text-yellow-400" />
+                <Star className="h-4 w-4 text-yellow-400" />
                 <span className="text-sm text-slate-300">Favorites only</span>
               </label>
             </div>

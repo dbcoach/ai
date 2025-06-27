@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { resultsService, ResultCategory, ResultTag } from '../../services/resultsService';
 import { 
-  XMarkIcon, 
-  PlusIcon, 
-  TrashIcon,
-  FolderIcon,
-  TagIcon
-} from '@heroicons/react/24/outline';
+  X, 
+  Plus, 
+  Trash2,
+  Folder,
+  Tag
+} from 'lucide-react';
 
 interface CategoryTagManagerProps {
   onClose: () => void;
@@ -140,7 +140,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700"
             >
-              <XMarkIcon className="h-6 w-6" />
+              <X className="h-6 w-6" />
             </button>
           </div>
 
@@ -160,7 +160,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <FolderIcon className="h-4 w-4" />
+              <Folder className="h-4 w-4" />
               <span>Categories</span>
             </button>
             <button
@@ -171,7 +171,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <TagIcon className="h-4 w-4" />
+              <Tag className="h-4 w-4" />
               <span>Tags</span>
             </button>
           </div>
@@ -196,7 +196,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                     disabled={loading}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    <PlusIcon className="h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                     <span>Add</span>
                   </button>
                 </form>
@@ -209,7 +209,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                 </h4>
                 {categories.length === 0 ? (
                   <div className="text-center py-8 text-slate-400">
-                    <FolderIcon className="h-12 w-12 mx-auto mb-3 text-slate-500" />
+                    <Folder className="h-12 w-12 mx-auto mb-3 text-slate-500" />
                     <p>No categories created yet</p>
                   </div>
                 ) : (
@@ -220,7 +220,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                         className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg border border-slate-700/50"
                       >
                         <div className="flex items-center space-x-3">
-                          <FolderIcon className="h-5 w-5 text-blue-400" />
+                          <Folder className="h-5 w-5 text-blue-400" />
                           <div>
                             <h5 className="font-medium text-white">{category.name}</h5>
                             <p className="text-sm text-slate-400">
@@ -233,7 +233,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                           className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
                           title="Delete category"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
@@ -263,7 +263,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                     disabled={loading}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    <PlusIcon className="h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                     <span>Add</span>
                   </button>
                 </form>
@@ -276,7 +276,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                 </h4>
                 {tags.length === 0 ? (
                   <div className="text-center py-8 text-slate-400">
-                    <TagIcon className="h-12 w-12 mx-auto mb-3 text-slate-500" />
+                    <Tag className="h-12 w-12 mx-auto mb-3 text-slate-500" />
                     <p>No tags created yet</p>
                   </div>
                 ) : (
@@ -287,7 +287,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                         className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg border border-slate-700/50"
                       >
                         <div className="flex items-center space-x-3">
-                          <TagIcon className="h-5 w-5 text-green-400" />
+                          <Tag className="h-5 w-5 text-green-400" />
                           <div>
                             <h5 className="font-medium text-white">#{tag.name}</h5>
                             <p className="text-sm text-slate-400">
@@ -300,7 +300,7 @@ export function CategoryTagManager({ onClose, onUpdated }: CategoryTagManagerPro
                           className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
                           title="Delete tag"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
