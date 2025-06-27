@@ -104,3 +104,67 @@
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
 }
+
+/* Avatar upload specific styles */
+.avatar-upload-overlay {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.8));
+}
+
+/* File drag and drop styles */
+.file-drop-zone {
+  transition: all 0.2s ease;
+}
+
+.file-drop-zone:hover {
+  transform: translateY(-1px);
+}
+
+.file-drop-zone.drag-over {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.2);
+}
+
+/* Loading spinner for avatar upload */
+@keyframes avatarUploadSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.avatar-upload-spinner {
+  animation: avatarUploadSpin 1s linear infinite;
+}
+
+/* Responsive avatar sizes */
+@media (max-width: 640px) {
+  .avatar-large {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .avatar-medium {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .avatar-small {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Focus styles for accessibility */
+.avatar-upload-button:focus {
+  outline: 2px solid rgba(139, 92, 246, 0.6);
+  outline-offset: 2px;
+}
+
+/* Error shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.error-shake {
+  animation: shake 0.5s ease-in-out;
+}

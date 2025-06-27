@@ -25,19 +25,50 @@ const AuthButton: React.FC = () => {
     return email.substring(0, 2).toUpperCase();
   };
 
+  const getAvatarUrl = () => {
+    // Try to get avatar from user metadata first, then from profile
+    return user?.user_metadata?.avatar_url;
+  };
+
   if (user) {
+    const avatarUrl = getAvatarUrl();
+
     return (
       <div className="relative">
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
           className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-800/50 transition-colors group"
+          aria-label="User menu"
         >
-          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-            {getInitials(user.email || 'U')}
+          <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-slate-600 group-hover:ring-purple-400 transition-colors">
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt="Profile picture"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to initials if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = `
+                      <div class="w-full h-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                        ${getInitials(user.email || 'U')}
+                      </div>
+                    `;
+                  }
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                {getInitials(user.email || 'U')}
+              </div>
+            )}
           </div>
           <div className="hidden sm:block text-left">
             <p className="text-sm font-medium text-white group-hover:text-purple-300 transition-colors">
-              {user.email}
+              {user.user_metadata?.name || user.email}
             </p>
             <p className="text-xs text-slate-400">Signed in</p>
           </div>
@@ -64,11 +95,36 @@ const AuthButton: React.FC = () => {
             >
               <div className="p-4 border-b border-slate-700/50">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                    {getInitials(user.email || 'U')}
+                  <div className="w-10 h-10 rounded-full overflow-hidden">
+                    {avatarUrl ? (
+                      <img 
+                        src={avatarUrl} 
+                        alt="Profile picture"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to initials if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `
+                              <div class="w-full h-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">
+                                ${getInitials(user.email || 'U')}
+                              </div>
+                            `;
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">
+                        {getInitials(user.email || 'U')}
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">{user.email}</p>
+                    <p className="text-sm font-medium text-white">
+                      {user.user_metadata?.name || user.email}
+                    </p>
                     <p className="text-xs text-slate-400">Free Plan</p>
                   </div>
                 </div>
