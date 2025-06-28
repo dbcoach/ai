@@ -841,15 +841,24 @@ Content for ${tabId} tab is being generated...`;
 
               {/* Content Based on Mode */}
               {mode.isLiveGeneration ? (
-                /* Agent Stream Content */
-                <div className="flex-1 relative">
+                /* Agent Stream Content - Independent Chat Scroll */
+                <div className="flex-1 relative bg-slate-900/20 rounded-lg m-2 border border-slate-700/30">
+                  {/* Chat Header */}
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 border-b border-slate-700/50 p-2 z-20">
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <MessageSquare className="w-3 h-3 text-purple-400" />
+                      <span>Live Chat Stream</span>
+                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse ml-auto" />
+                    </div>
+                  </div>
+                  
                   {/* Fade overlay at top */}
-                  <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-slate-800/20 to-transparent z-10 pointer-events-none"></div>
+                  <div className="absolute top-8 left-0 right-0 h-4 bg-gradient-to-b from-slate-900/50 to-transparent z-10 pointer-events-none"></div>
                   
                   {/* Scrollable content with fixed height */}
                   <div 
                     ref={messagesContainerRef}
-                    className="h-full p-4 overflow-y-auto scrollbar-elegant scroll-smooth"
+                    className="h-full overflow-y-auto scrollbar-elegant scroll-smooth pt-12 pb-2"
                     onScroll={() => {
                       if (!messagesContainerRef.current) return;
                       
@@ -862,10 +871,10 @@ Content for ${tabId} tab is being generated...`;
                       }
                     }}
                   >
-                    <div className="space-y-4">
+                    <div className="px-4 space-y-4">
                       {messages.map((message) => (
-                        <div key={message.id} className="flex items-start gap-3">
-                          <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0`}>
+                        <div key={message.id} className="flex items-start gap-3 animate-in slide-in-from-bottom-1 duration-300">
+                          <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0 shadow-lg`}>
                             {message.agent === 'User' ? (
                               <User className="w-4 h-4 text-white" />
                             ) : (
@@ -879,13 +888,13 @@ Content for ${tabId} tab is being generated...`;
                                 {message.timestamp.toLocaleTimeString()}
                               </span>
                             </div>
-                            <div className={`rounded-lg p-3 ${
+                            <div className={`rounded-lg p-3 transition-all duration-200 hover:scale-[1.01] ${
                               message.agent === 'User' 
-                                ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200'
+                                ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200 shadow-purple-500/10'
                                 : message.type === 'system'
-                                ? 'bg-green-600/20 border border-green-500/30 text-green-200'
-                                : 'bg-slate-800/50 border border-slate-700/50 text-slate-300'
-                            }`}>
+                                ? 'bg-green-600/20 border border-green-500/30 text-green-200 shadow-green-500/10'
+                                : 'bg-slate-800/50 border border-slate-700/50 text-slate-300 shadow-slate-800/10'
+                            } shadow-lg`}>
                               <p className="leading-relaxed">{message.content}</p>
                             </div>
                           </div>
@@ -893,15 +902,15 @@ Content for ${tabId} tab is being generated...`;
                       ))}
                       
                       {isGenerating && (
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-600 to-teal-600 flex items-center justify-center">
+                        <div className="flex items-start gap-3 animate-in slide-in-from-bottom-1 duration-300">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-600 to-teal-600 flex items-center justify-center shadow-lg">
                             <Loader2 className="w-4 h-4 text-white animate-spin" />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-medium text-white">AI Agents</span>
                             </div>
-                            <div className="bg-slate-800/50 rounded-lg p-3 border border-yellow-500/30">
+                            <div className="bg-slate-800/50 rounded-lg p-3 border border-yellow-500/30 shadow-lg">
                               <div className="flex items-center gap-2">
                                 <div className="flex gap-1">
                                   <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -1168,8 +1177,8 @@ Content for ${tabId} tab is being generated...`;
             {/* Right Panel - Content */}
             <div className="w-[70%] lg:w-[70%] md:w-[65%] sm:w-[60%] flex flex-col"
                  style={{ height: 'calc(100vh - 80px)' }}>
-              {/* Content Header */}
-              <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
+              {/* Results Canvas Header */}
+              <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-green-600/10 to-blue-600/10">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   {mode.isLiveGeneration || (tabs.some(tab => tab.content)) ? (
                     <>
@@ -1180,6 +1189,12 @@ Content for ${tabId} tab is being generated...`;
                           Complete
                         </span>
                       )}
+                      {mode.isLiveGeneration && (
+                        <div className="ml-auto flex items-center gap-2 text-xs text-slate-300">
+                          <span>Results Canvas</span>
+                          <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
@@ -1189,9 +1204,9 @@ Content for ${tabId} tab is being generated...`;
                   )}
                 </h3>
                 <p className="text-sm text-slate-400">
-                  {mode.isLiveGeneration ? 'Real-time content generation' : 
+                  {mode.isLiveGeneration ? 'Real-time content generation and streaming results' : 
                    tabs.some(tab => tab.content) ? 'Generated database design ready for review' : 
-                   'Interactive database workspace'}
+                   'Interactive database workspace with independent scroll'}
                 </p>
               </div>
 
@@ -1217,65 +1232,86 @@ Content for ${tabId} tab is being generated...`;
                     ))}
                   </div>
 
-                  <div className="flex-1 p-4 overflow-y-auto">
-                    {tabs.map((tab) => (
-                      <div
-                        key={tab.id}
-                        className={`${activeTab === tab.id ? 'block' : 'hidden'}`}
-                      >
-                        <div className="bg-slate-900/50 rounded-lg border border-slate-700/50 min-h-[400px] overflow-hidden">
-                          <div className="relative h-full">
-                            {tab.content ? (
-                              <>
-                                {tab.status === 'active' && isStreaming && (
-                                  <div className="absolute top-2 right-2 z-10 bg-slate-800/90 backdrop-blur-sm rounded-lg px-3 py-1 border border-slate-600/50 transition-all duration-300 ease-in-out">
+                  {/* Results Canvas - Independent Scroll Container */}
+                  <div className="flex-1 overflow-hidden bg-slate-900/10 m-2 rounded-lg border border-slate-700/30">
+                    <div className="h-full overflow-y-auto scrollbar-elegant scroll-smooth">
+                      {tabs.map((tab) => (
+                        <div
+                          key={tab.id}
+                          className={`${activeTab === tab.id ? 'block' : 'hidden'} h-full`}
+                        >
+                          <div className="bg-slate-900/50 rounded-lg border border-slate-700/50 h-full min-h-[calc(100vh-200px)] overflow-hidden m-2">
+                            <div className="relative h-full">
+                              {tab.content ? (
+                                <>
+                                  {tab.status === 'active' && isStreaming && (
+                                    <div className="absolute top-3 right-3 z-10 bg-slate-800/90 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-slate-600/50 transition-all duration-300 ease-in-out shadow-lg">
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                        <span className="text-green-300 font-medium transition-all duration-300 ease-in-out">
+                                          {Math.round((streamingContent.get(tab.id)?.position || 0) / (streamingContent.get(tab.id)?.full.length || 1) * 100)}%
+                                        </span>
+                                        <span className="text-slate-400 transition-all duration-300 ease-in-out">
+                                          ({streamingContent.get(tab.id)?.position || 0}/{streamingContent.get(tab.id)?.full.length || 0})
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Generation Complete Badge */}
+                                  {!isStreaming && !mode.isLiveGeneration && tab.content && (
+                                    <div className="absolute top-3 right-3 z-10 bg-green-800/90 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-green-600/50 transition-all duration-300 ease-in-out shadow-lg">
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <CheckCircle className="w-3 h-3 text-green-400" />
+                                        <span className="text-green-300 font-medium">Complete</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Content Type Indicator */}
+                                  <div className="absolute top-3 left-3 z-10 bg-blue-800/90 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-blue-600/50 shadow-lg">
                                     <div className="flex items-center gap-2 text-xs">
-                                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                      <span className="text-green-300 font-medium transition-all duration-300 ease-in-out">
-                                        {Math.round((streamingContent.get(tab.id)?.position || 0) / (streamingContent.get(tab.id)?.full.length || 1) * 100)}%
-                                      </span>
-                                      <span className="text-slate-400 transition-all duration-300 ease-in-out">
-                                        ({streamingContent.get(tab.id)?.position || 0}/{streamingContent.get(tab.id)?.full.length || 0})
-                                      </span>
+                                      {getTabIcon(tab.id)}
+                                      <span className="text-blue-300 font-medium">{tab.title}</span>
                                     </div>
                                   </div>
-                                )}
-                                
-                                {/* Generation Complete Badge */}
-                                {!isStreaming && !mode.isLiveGeneration && tab.content && (
-                                  <div className="absolute top-2 right-2 z-10 bg-green-800/90 backdrop-blur-sm rounded-lg px-3 py-1 border border-green-600/50 transition-all duration-300 ease-in-out">
-                                    <div className="flex items-center gap-2 text-xs">
-                                      <CheckCircle className="w-3 h-3 text-green-400" />
-                                      <span className="text-green-300 font-medium">Complete</span>
+                                  
+                                  {/* Scrollable Content Area */}
+                                  <div className="h-full overflow-y-auto scrollbar-elegant scroll-smooth">
+                                    <div className="p-6 pt-14">
+                                      <div className="text-slate-200 whitespace-pre-wrap font-mono text-sm leading-relaxed transition-all duration-300 ease-in-out">
+                                        {tab.content}
+                                        {tab.status === 'active' && isStreaming && (
+                                          <span className="inline-block w-2 h-5 bg-green-400 animate-pulse ml-1 transition-opacity duration-300" />
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                )}
-                                
-                                <div className="h-full p-4 overflow-y-auto scrollbar-elegant scroll-smooth">
-                                  <div className="text-slate-200 whitespace-pre-wrap font-mono text-sm leading-relaxed transition-all duration-300 ease-in-out">
-                                    {tab.content}
-                                    {tab.status === 'active' && isStreaming && (
-                                      <span className="inline-block w-2 h-5 bg-green-400 animate-pulse ml-1 transition-opacity duration-300" />
+                                </>
+                              ) : (
+                                <div className="flex items-center justify-center h-full text-slate-500">
+                                  <div className="text-center">
+                                    {tab.status === 'pending' ? (
+                                      <>
+                                        <Clock className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                                        <span>Waiting for {tab.agent}...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                          <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+                                        </div>
+                                        <span>Generating {tab.title.toLowerCase()}...</span>
+                                      </>
                                     )}
                                   </div>
                                 </div>
-                              </>
-                            ) : (
-                              <div className="flex items-center justify-center h-40 text-slate-500">
-                                {tab.status === 'pending' ? (
-                                  <span>Waiting for {tab.agent}...</span>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>Generating content...</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </>
               ) : (
