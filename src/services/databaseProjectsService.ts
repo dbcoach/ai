@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, handleAuthError } from '../lib/supabase';
 
 export interface DatabaseProject {
   id: string;
@@ -86,6 +86,13 @@ class DatabaseProjectsService {
       return data || [];
     } catch (error) {
       console.error('Error fetching projects:', error);
+      
+      // Handle auth errors gracefully
+      const handled = await handleAuthError(error);
+      if (handled) {
+        return []; // Return empty array if auth error was handled
+      }
+      
       throw error;
     }
   }

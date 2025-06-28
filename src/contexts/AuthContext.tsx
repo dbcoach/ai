@@ -45,14 +45,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (error) {
           console.error('Error getting session:', error);
-          setError(error.message);
+          
+          // Handle specific auth errors
+          if (error.message?.includes('refresh_token_not_found') || 
+              error.message?.includes('Invalid Refresh Token')) {
+            console.log('Refresh token invalid, clearing session');
+            // Clear any stale tokens and force sign out
+            await supabase.auth.signOut();
+            setSession(null);
+            setUser(null);
+            setError(null); // Don't show error to user for expired tokens
+          } else {
+            setError(error.message);
+          }
         } else {
           setSession(session);
           setUser(session?.user ?? null);
         }
       } catch (err) {
         console.error('Unexpected error getting session:', err);
-        setError('An unexpected error occurred');
+        
+        // If there's a network or parsing error, try to clear session
+        if (err instanceof Error && 
+            (err.message.includes('refresh_token') || err.message.includes('Invalid'))) {
+          console.log('Clearing invalid session due to error:', err.message);
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setError(null);
+        } else {
+          setError('An unexpected error occurred');
+        }
       } finally {
         setLoading(false);
       }
@@ -63,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
+        console.log('Auth state changed:', event, session?.user?.email);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -81,14 +104,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             break;
           case 'SIGNED_OUT':
             console.log('User signed out');
-            // Clear any cached data
+            // Clear any cached data and local storage
             setAuthAttempts({});
+            localStorage.removeItem('rememberMe');
+            // Clear any potential stale tokens
+            localStorage.removeItem('supabase.auth.token');
             break;
           case 'TOKEN_REFRESHED':
-            console.log('Token refreshed');
+            console.log('Token refreshed successfully');
             break;
           case 'PASSWORD_RECOVERY':
             console.log('Password recovery initiated');
+            break;
+          case 'USER_UPDATED':
+            console.log('User updated');
             break;
         }
       }

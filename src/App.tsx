@@ -5,6 +5,8 @@ import { Settings } from './components/Settings';
 import { DatabaseProjectsPage } from './components/projects/DatabaseProjectsPage';
 import { GenerationProvider } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { AuthErrorHandler } from './components/auth/AuthErrorHandler';
+import { AuthDebugPanel } from './components/debug/AuthDebugPanel';
 
 function AppContent() {
   return (
@@ -15,6 +17,7 @@ function AppContent() {
         <Route path="/settings/*" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <AuthDebugPanel />
     </div>
   );
 }
@@ -22,11 +25,13 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <GenerationProvider>
-          <AppContent />
-        </GenerationProvider>
-      </Router>
+      <AuthErrorHandler>
+        <Router>
+          <GenerationProvider>
+            <AppContent />
+          </GenerationProvider>
+        </Router>
+      </AuthErrorHandler>
     </AuthProvider>
   );
 }
