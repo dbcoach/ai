@@ -40,7 +40,10 @@ export function CreateConversationModal({
 
     try {
       setLoadingProjects(true);
-      const userProjects = await databaseProjectsService.getUserProjects(user.id);
+      // Use getUserProjects if available, otherwise fall back to getProjects
+      const userProjects = await (databaseProjectsService.getUserProjects 
+        ? databaseProjectsService.getUserProjects(user.id)
+        : databaseProjectsService.getProjects(user.id));
       setProjects(userProjects);
     } catch (error) {
       console.error('Error loading projects:', error);

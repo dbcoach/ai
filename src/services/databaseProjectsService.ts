@@ -98,7 +98,7 @@ class DatabaseProjectsService {
   }
 
   /**
-   * Alias for getProjects - for compatibility
+   * Get all database projects for a user (alias for getProjects)
    */
   async getUserProjects(userId: string): Promise<DatabaseProject[]> {
     return this.getProjects(userId);
@@ -421,4 +421,46 @@ class DatabaseProjectsService {
   }
 }
 
-export const databaseProjectsService = new DatabaseProjectsService();
+// Create service instance with explicit method assignment
+class ExtendedDatabaseProjectsService extends DatabaseProjectsService {
+  // Ensure getUserProjects exists
+  async getUserProjects(userId: string): Promise<DatabaseProject[]> {
+    return super.getProjects(userId);
+  }
+
+  // Ensure getProject exists  
+  async getProject(projectId: string): Promise<DatabaseProject | null> {
+    if (super.getProject) {
+      return super.getProject(projectId);
+    }
+    
+    // Fallback implementation
+    try {
+      const { data, error } = await supabase
+        .from('database_projects')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      
+      const handled = await handleAuthError(error);
+      if (handled) {
+        return null;
+      }
+      
+      throw error;
+    }
+  }
+}
+
+export const databaseProjectsService = new ExtendedDatabaseProjectsService();
