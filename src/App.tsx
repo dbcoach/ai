@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LandingPage from './components/LandingPage';
 import { Settings } from './components/Settings';
 import { DatabaseProjectsPage } from './components/projects/DatabaseProjectsPage';
+import { StreamingPage } from './components/streaming/StreamingPage';
 import { GenerationProvider } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { AuthErrorHandler } from './components/auth/AuthErrorHandler';
@@ -14,6 +15,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/projects" element={<DatabaseProjectsPage />} />
+        <Route path="/streaming" element={<StreamingPage />} />
         <Route path="/settings/*" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

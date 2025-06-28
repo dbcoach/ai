@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Zap, ArrowRight, Bot, Sparkles, Settings } from 'lucide-react';
+import { Database, Zap, ArrowRight, Bot, Sparkles, Settings, Play } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DBCoachMode } from '../context/GenerationContext';
 import AuthButton from './auth/AuthButton';
@@ -36,6 +36,18 @@ const LandingPage: React.FC = () => {
       } catch (error) {
         console.error('Generation failed:', error);
       }
+    }
+  };
+
+  const handleStreamingGeneration = () => {
+    if (prompt.trim() && user) {
+      // Navigate to streaming page with parameters
+      const params = new URLSearchParams({
+        prompt: prompt.trim(),
+        dbType,
+        mode
+      });
+      navigate(`/streaming?${params.toString()}`);
     }
   };
 
@@ -239,6 +251,18 @@ const LandingPage: React.FC = () => {
                     </>
                   )}
                 </button>
+
+                {/* Streaming Generation Button */}
+                <button
+                  type="button"
+                  onClick={handleStreamingGeneration}
+                  disabled={!prompt.trim() || isGenerating || !user}
+                  className="w-full mt-3 p-4 bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 hover:from-green-500 hover:via-emerald-500 hover:to-green-600 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 group hover:shadow-lg hover:shadow-green-500/25 hover:transform hover:scale-[1.02]"
+                >
+                  <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>{!user ? 'Sign in for Live Generation' : 'Watch AI Build Live'}</span>
+                  {user && <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse" />}
+                </button>
               </form>
 
               {/* Help text */}
@@ -259,6 +283,19 @@ const LandingPage: React.FC = () => {
                         <p>Be specific about your use case. Mention entities, relationships, and any special requirements for the best results.</p>
                       </>
                     )}
+                  </div>
+                </div>
+                
+                {/* Streaming Feature Info */}
+                <div className="mt-3 p-3 bg-green-900/20 rounded-lg border border-green-500/30">
+                  <div className="flex items-start space-x-3">
+                    <div className="p-1.5 bg-green-500/20 rounded-lg">
+                      <Play className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div className="text-sm text-green-300 leading-relaxed">
+                      <p className="font-medium mb-1">🎬 Live Generation Experience:</p>
+                      <p>Watch AI agents work in real-time • Character-by-character streaming • Task progress visualization • Interactive controls (pause/resume/speed)</p>
+                    </div>
                   </div>
                 </div>
               </div>
