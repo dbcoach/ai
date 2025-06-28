@@ -1,6 +1,7 @@
-import React from 'react';
-import { Copy, Download, FileText, Zap } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Copy, Download, FileText, Zap, BarChart3, TrendingUp } from 'lucide-react';
 import useGeneration from '../../hooks/useGeneration';
+import MetricsChart from '../charts/MetricsChart';
 
 const AnalysisTab: React.FC = () => {
   const { getStepContent } = useGeneration();
@@ -27,6 +28,48 @@ const AnalysisTab: React.FC = () => {
 
   const analysis = parseAnalysisContent(content.content);
   const isStructured = !analysis.rawContent;
+
+  // Generate visualization metrics from analysis
+  const requirementMetrics = useMemo(() => {
+    if (!isStructured || !analysis.requirements) return [];
+    
+    const metrics = [];
+    if (analysis.requirements.explicit) {
+      metrics.push({
+        label: 'Explicit Requirements',
+        value: analysis.requirements.explicit.length,
+        color: '#10B981'
+      });
+    }
+    if (analysis.requirements.implicit) {
+      metrics.push({
+        label: 'Implicit Requirements',
+        value: analysis.requirements.implicit.length,
+        color: '#3B82F6'
+      });
+    }
+    if (analysis.requirements.technical_constraints) {
+      metrics.push({
+        label: 'Technical Constraints',
+        value: analysis.requirements.technical_constraints.length,
+        color: '#F59E0B'
+      });
+    }
+    
+    return metrics;
+  }, [analysis, isStructured]);
+
+  const confidenceMetrics = useMemo(() => {
+    if (!isStructured || !analysis.assumptions) return [];
+    
+    return analysis.assumptions
+      .filter((assumption: any) => assumption.confidence !== undefined)
+      .map((assumption: any, index: number) => ({
+        label: `Assumption ${index + 1}`,
+        value: Math.round(assumption.confidence * 100),
+        color: `#${Math.floor(Math.random()*16777215).toString(16)}`
+      }));
+  }, [analysis, isStructured]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(JSON.stringify(analysis, null, 2));
@@ -101,6 +144,36 @@ const AnalysisTab: React.FC = () => {
       </div>
       
       <div className="flex-1 overflow-auto scrollbar-elegant p-6 space-y-6">
+        {/* Visualization Charts */}
+        {isStructured && (requirementMetrics.length > 0 || confidenceMetrics.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {requirementMetrics.length > 0 && (
+              <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
+                <div className="h-80">
+                  <MetricsChart
+                    data={requirementMetrics}
+                    type="doughnut"
+                    title="Requirements Breakdown"
+                    className="h-full"
+                  />
+                </div>
+              </div>
+            )}
+            {confidenceMetrics.length > 0 && (
+              <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
+                <div className="h-80">
+                  <MetricsChart
+                    data={confidenceMetrics}
+                    type="bar"
+                    title="Assumption Confidence"
+                    className="h-full"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Domain & Scale */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">

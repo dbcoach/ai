@@ -169,3 +169,5 @@ export const BaseChart: React.FC<BaseChartProps> = ({
     </>
   );
 };
+
+export default BaseChart;
