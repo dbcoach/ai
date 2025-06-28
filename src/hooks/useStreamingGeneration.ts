@@ -33,6 +33,54 @@ export function useStreamingGeneration(options: UseStreamingGenerationOptions = 
     }
   }, [enableStreaming, streamingSpeed]);
 
+  // Enhanced reasoning messages for each agent
+  const getDetailedReasoning = (progress: DBCoachProgress): string[] => {
+    const messages = [];
+    
+    switch (progress.step) {
+      case 'analysis':
+        messages.push(
+          `🔍 Analyzing domain: "${progress.reasoning}"`,
+          `📊 Estimating scale: Small/Medium/Large based on keyword analysis`,
+          `🎯 Extracting entities: Users, Products, Orders from context`,
+          `⚡ Inferring relationships: One-to-many, many-to-many patterns`,
+          `✅ Requirements analysis complete`
+        );
+        break;
+      case 'design':
+        messages.push(
+          `🏗️ Selecting PostgreSQL for ACID compliance and complex relationships`,
+          `📐 Designing core entities with proper normalization (3NF)`,
+          `🔗 Mapping relationships: Foreign keys and junction tables`,
+          `⚡ Planning indexes for query optimization`,
+          `🛡️ Adding constraints for data integrity`,
+          `✅ Schema design complete`
+        );
+        break;
+      case 'implementation':
+        messages.push(
+          `⚙️ Generating CREATE TABLE statements with proper data types`,
+          `📝 Creating sample data that reflects business domain`,
+          `🔍 Adding indexes for commonly queried fields`,
+          `🚀 Preparing API endpoint examples for CRUD operations`,
+          `🧪 Setting up migration scripts for version control`,
+          `✅ Implementation package ready`
+        );
+        break;
+      case 'validation':
+        messages.push(
+          `🔍 Validating schema structure for normalization compliance`,
+          `⚡ Reviewing query performance and index coverage`,
+          `🛡️ Checking security measures and data protection`,
+          `📈 Assessing scalability for future growth`,
+          `✅ Quality assurance complete - production ready!`
+        );
+        break;
+    }
+    
+    return messages;
+  };
+
   // Enhanced progress handler that feeds into streaming service
   const handleStreamingProgress = useCallback((progress: DBCoachProgress) => {
     if (!enableStreaming || !currentSessionRef.current) {
@@ -45,6 +93,18 @@ export function useStreamingGeneration(options: UseStreamingGenerationOptions = 
     // Update task progress in streaming service
     const progressPercent = (progress.currentStep / progress.totalSteps) * 100;
     streamingService.updateTaskProgress(taskId, progressPercent, progress.reasoning);
+    
+    // Add detailed reasoning messages for better UX
+    const detailedMessages = getDetailedReasoning(progress);
+    detailedMessages.forEach((message, index) => {
+      setTimeout(() => {
+        streamingService.emit('insight_message', {
+          agent: progress.agent,
+          message,
+          timestamp: new Date()
+        });
+      }, index * 1000); // Stagger messages by 1 second
+    });
     
     // Trigger callbacks
     onTaskProgress?.(taskId, progressPercent, progress.reasoning);

@@ -41,6 +41,7 @@ export function StreamingInterface({
   
   const contentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const cursorRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
+  const insightsEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize streaming session
   useEffect(() => {
@@ -196,6 +197,10 @@ export function StreamingInterface({
       setIsPlaying(true);
     };
 
+    const handleInsightMessage = (data: { agent: string; message: string; timestamp: Date }) => {
+      setInsights(prev => [...prev, data]);
+    };
+
     // Subscribe to events
     streamingService.on('session_initialized', handleSessionInitialized);
     streamingService.on('task_started', handleTaskStarted);
@@ -205,11 +210,19 @@ export function StreamingInterface({
     streamingService.on('session_completed', handleSessionCompleted);
     streamingService.on('streaming_paused', handleStreamingPaused);
     streamingService.on('streaming_resumed', handleStreamingResumed);
+    streamingService.on('insight_message', handleInsightMessage);
 
     return () => {
       streamingService.removeAllListeners();
     };
   }, [tasks, taskContent, onComplete]);
+
+  // Auto-scroll insights to bottom
+  useEffect(() => {
+    if (insightsEndRef.current) {
+      insightsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [insights]);
 
   // Update progress and time estimates
   useEffect(() => {
@@ -298,136 +311,169 @@ export function StreamingInterface({
       </div>
 
       <div className="flex h-full">
-        {/* Task Sidebar */}
-        <div className="w-80 border-r border-slate-700/50 bg-slate-800/20 p-4 overflow-y-auto">
-          <h3 className="text-lg font-semibold text-white mb-4">Agent Tasks</h3>
+        {/* Left Side: AI Agent Reasoning Stream */}
+        <div className="w-1/2 border-r border-slate-700/50 bg-slate-800/20 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Bot className="w-5 h-5 text-purple-400" />
+              AI Agent Reasoning
+            </h3>
+            <p className="text-sm text-slate-400 mt-1">Watch agents think and make decisions</p>
+          </div>
           
-          <div className="space-y-3">
-            {tasks.map((task, index) => (
-              <div 
-                key={task.id}
-                className={`p-4 rounded-lg border transition-all duration-200 ${
-                  task.status === 'active' 
-                    ? 'bg-slate-700/50 border-yellow-500/50' 
-                    : task.status === 'completed'
-                    ? 'bg-green-900/20 border-green-500/30'
-                    : 'bg-slate-800/30 border-slate-700/50'
-                }`}
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  {getStatusIcon(task.status)}
-                  <div className="flex-1">
-                    <h4 className="font-medium text-white">{task.title}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${getAgentColor(task.agent)} flex items-center justify-center`}>
-                        <Bot className="w-3 h-3 text-white" />
-                      </div>
-                      <span className="text-xs text-slate-400">{task.agent}</span>
+          {/* Task Progress Overview */}
+          <div className="p-4 border-b border-slate-700/50 bg-slate-800/10">
+            <div className="grid grid-cols-2 gap-3">
+              {tasks.map((task) => (
+                <div 
+                  key={task.id}
+                  className={`p-3 rounded-lg border transition-all duration-200 ${
+                    task.status === 'active' 
+                      ? 'bg-yellow-500/10 border-yellow-500/30' 
+                      : task.status === 'completed'
+                      ? 'bg-green-500/10 border-green-500/30'
+                      : 'bg-slate-700/30 border-slate-700/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    {getStatusIcon(task.status)}
+                    <span className="text-sm font-medium text-white truncate">{task.title}</span>
+                  </div>
+                  <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                      style={{ width: `${task.progress}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Live AI Reasoning Stream */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            <div className="space-y-3">
+              {insights.map((insight, index) => (
+                <div key={index} className="flex items-start gap-3 text-sm">
+                  <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${getAgentColor(insight.agent)} flex items-center justify-center flex-shrink-0`}>
+                    <Bot className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-white">{insight.agent}</span>
+                      <span className="text-xs text-slate-500">
+                        {insight.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                      <p className="text-slate-300 leading-relaxed">{insight.message}</p>
                     </div>
                   </div>
                 </div>
-                
-                {/* Progress bar */}
-                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden mb-2">
-                  <div 
-                    className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
-                    style={{ width: `${task.progress}%` }}
-                  />
-                </div>
-                
-                {/* Subtasks */}
-                {task.status === 'active' && (
-                  <div className="space-y-1 mt-3">
-                    {task.subtasks.map((subtask) => (
-                      <div key={subtask.id} className="flex items-center gap-2 text-xs">
-                        <div className={`w-2 h-2 rounded-full ${
-                          subtask.status === 'completed' ? 'bg-green-400' :
-                          subtask.status === 'active' ? 'bg-yellow-400 animate-pulse' :
-                          'bg-slate-600'
-                        }`} />
-                        <span className={`${
-                          subtask.status === 'completed' ? 'text-green-300' :
-                          subtask.status === 'active' ? 'text-yellow-300' :
-                          'text-slate-400'
-                        }`}>
-                          {subtask.title}
-                        </span>
-                      </div>
-                    ))}
+              ))}
+              
+              {/* Typing indicator for active agent */}
+              {activeTask && (
+                <div className="flex items-start gap-3 text-sm">
+                  <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${getAgentColor(activeTask.agent)} flex items-center justify-center flex-shrink-0`}>
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-white">{activeTask.agent}</span>
+                      <Loader2 className="w-3 h-3 text-yellow-400 animate-spin" />
+                    </div>
+                    <div className="bg-slate-800/50 rounded-lg p-3 border border-yellow-500/30">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span className="text-yellow-300 text-sm">Thinking...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={insightsEndRef} />
+            </div>
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Live Content Stream */}
-          <div className="flex-1 p-6 overflow-y-auto">
+        {/* Right Side: Generated Results */}
+        <div className="w-1/2 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Database className="w-5 h-5 text-green-400" />
+              Generated Database Design
+            </h3>
+            <p className="text-sm text-slate-400 mt-1">Real-time content generation</p>
+          </div>
+
+          {/* Live Content Generation */}
+          <div className="flex-1 p-4 overflow-y-auto">
             <div className="space-y-6">
               {tasks.map((task) => {
                 const content = taskContent.get(task.id) || '';
                 
                 return (
-                  <div key={task.id} className={`transition-opacity duration-300 ${
-                    task.status === 'pending' ? 'opacity-40' : 'opacity-100'
+                  <div key={task.id} className={`transition-all duration-300 ${
+                    task.status === 'pending' ? 'opacity-30' : 'opacity-100'
                   }`}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${getAgentColor(task.agent)} flex items-center justify-center`}>
-                        <Bot className="w-4 h-4 text-white" />
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${getAgentColor(task.agent)} flex items-center justify-center`}>
+                        <Bot className="w-3 h-3 text-white" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-white">{task.title}</h3>
-                        <span className="text-sm text-slate-400">{task.agent}</span>
-                      </div>
-                      {task.status === 'active' && <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />}
+                      <h4 className="font-semibold text-white">{task.title}</h4>
+                      {task.status === 'active' && (
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                          <span className="text-xs text-green-400">Generating...</span>
+                        </div>
+                      )}
+                      {task.status === 'completed' && (
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span className="text-xs text-green-400">Complete</span>
+                        </div>
+                      )}
                     </div>
                     
-                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
-                      <div 
-                        ref={(el) => {
-                          if (el) contentRefs.current.set(task.id, el);
-                        }}
-                        className="text-slate-200 whitespace-pre-wrap font-mono text-sm leading-relaxed"
-                      >
-                        {content}
-                        {task.status === 'active' && (
-                          <span 
-                            ref={(el) => {
-                              if (el) cursorRefs.current.set(task.id, el);
-                            }}
-                            className="inline-block w-2 h-5 bg-purple-400 animate-pulse ml-1"
-                          />
-                        )}
-                      </div>
+                    <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50 min-h-[100px]">
+                      {content ? (
+                        <div 
+                          ref={(el) => {
+                            if (el) contentRefs.current.set(task.id, el);
+                          }}
+                          className="text-slate-200 whitespace-pre-wrap font-mono text-sm leading-relaxed"
+                        >
+                          {content}
+                          {task.status === 'active' && (
+                            <span 
+                              ref={(el) => {
+                                if (el) cursorRefs.current.set(task.id, el);
+                              }}
+                              className="inline-block w-2 h-5 bg-green-400 animate-pulse ml-1"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-20 text-slate-500">
+                          {task.status === 'pending' ? (
+                            <span className="text-sm">Waiting for {task.agent}...</span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span className="text-sm">Preparing content...</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* AI Insights Panel */}
-          <div className="border-t border-slate-700/50 bg-slate-800/30 p-4 max-h-48 overflow-y-auto">
-            <h4 className="text-sm font-medium text-slate-300 mb-3">AI Agent Insights</h4>
-            <div className="space-y-2">
-              {insights.slice(-5).map((insight, index) => (
-                <div key={index} className="flex items-start gap-3 text-sm">
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-r from-green-600 to-teal-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Bot className="w-3 h-3 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-300">{insight.agent}</span>
-                      <span className="text-xs text-slate-500">
-                        {insight.timestamp.toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="text-slate-400 mt-1">{insight.message}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
