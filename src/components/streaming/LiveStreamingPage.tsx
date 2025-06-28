@@ -67,12 +67,18 @@ export function LiveStreamingPage() {
   
   // Refs for auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const contentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const cursorRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
 
   // Character-by-character streaming state
   const [streamingContent, setStreamingContent] = useState<Map<string, { full: string; displayed: string; position: number }>>(new Map());
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+
+  // Scroll position tracking
+  const [lastScrollTop, setLastScrollTop] = useState(0);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
 
   // Redirect if no prompt
   useEffect(() => {
@@ -80,6 +86,39 @@ export function LiveStreamingPage() {
       navigate('/', { replace: true });
     }
   }, [prompt, navigate]);
+
+  // Auto-scroll messages
+  useEffect(() => {
+    if (messagesEndRef.current && isAutoScrollEnabled) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isAutoScrollEnabled]);
+
+  // Track scroll events
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // User is scrolling up
+      if (scrollTop < lastScrollTop) {
+        setIsUserScrolling(true);
+        setIsAutoScrollEnabled(false);
+      }
+      
+      // User has scrolled to bottom
+      if (scrollHeight - scrollTop - clientHeight < 10) {
+        setIsAutoScrollEnabled(true);
+        setIsUserScrolling(false);
+      }
+      
+      setLastScrollTop(scrollTop);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [lastScrollTop]);
 
   // Define the generation function
   const startLiveGeneration = useCallback(async () => {
@@ -228,11 +267,6 @@ export function LiveStreamingPage() {
       });
     }
   }, [prompt, user, isGenerating, startLiveGeneration]);
-
-  // Auto-scroll messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   // Character streaming effect
   useEffect(() => {
@@ -457,6 +491,8 @@ Content for ${tabId} tab is being generated...`;
 
     setMessages(prev => [...prev, message]);
     setUserInput('');
+    // Enable auto-scroll when user sends a message
+    setIsAutoScrollEnabled(true);
 
     // Simulate AI response
     setTimeout(() => {
@@ -500,6 +536,13 @@ Content for ${tabId} tab is being generated...`;
       'User': 'from-slate-600 to-slate-700'
     };
     return colors[agent as keyof typeof colors] || 'from-slate-600 to-slate-700';
+  };
+
+  // Scroll helper function to programmatically scroll to bottom
+  const scrollToBottom = () => {
+    if (messagesEndRef.current && isAutoScrollEnabled) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   if (!prompt) return null;
@@ -558,64 +601,89 @@ Content for ${tabId} tab is being generated...`;
               <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-slate-800/20 to-transparent z-10 pointer-events-none"></div>
               
               {/* Scrollable content */}
-              <div className="h-full p-4 overflow-y-auto scrollbar-elegant scroll-smooth">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div key={message.id} className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0`}>
-                      {message.agent === 'User' ? (
-                        <User className="w-4 h-4 text-white" />
-                      ) : (
-                        <Bot className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-white">{message.agent}</span>
-                        <span className="text-xs text-slate-500">
-                          {message.timestamp.toLocaleTimeString()}
-                        </span>
+              <div 
+                ref={messagesContainerRef}
+                className="h-full p-4 overflow-y-auto scrollbar-elegant scroll-smooth"
+                onScroll={() => {
+                  if (!messagesContainerRef.current) return;
+                  
+                  const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+                  // Check if scrolled to bottom
+                  const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
+                  
+                  if (isAtBottom && !isAutoScrollEnabled) {
+                    setIsAutoScrollEnabled(true);
+                  }
+                }}
+              >
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div key={message.id} className="flex items-start gap-3">
+                      <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0`}>
+                        {message.agent === 'User' ? (
+                          <User className="w-4 h-4 text-white" />
+                        ) : (
+                          <Bot className="w-4 h-4 text-white" />
+                        )}
                       </div>
-                      <div className={`rounded-lg p-3 ${
-                        message.agent === 'User' 
-                          ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200'
-                          : 'bg-slate-800/50 border border-slate-700/50 text-slate-300'
-                      }`}>
-                        <p className="leading-relaxed">{message.content}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {isGenerating && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-600 to-teal-600 flex items-center justify-center">
-                      <Loader2 className="w-4 h-4 text-white animate-spin" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-white">AI Agents</span>
-                      </div>
-                      <div className="bg-slate-800/50 rounded-lg p-3 border border-yellow-500/30">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                          </div>
-                          <span className="text-yellow-300 text-sm">Collaborating...</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-white">{message.agent}</span>
+                          <span className="text-xs text-slate-500">
+                            {message.timestamp.toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className={`rounded-lg p-3 ${
+                          message.agent === 'User' 
+                            ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200'
+                            : 'bg-slate-800/50 border border-slate-700/50 text-slate-300'
+                        }`}>
+                          <p className="leading-relaxed">{message.content}</p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
+                  ))}
+                  
+                  {isGenerating && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-600 to-teal-600 flex items-center justify-center">
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-white">AI Agents</span>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-3 border border-yellow-500/30">
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                            <span className="text-yellow-300 text-sm">Collaborating...</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </div>
               </div>
               
               {/* Fade overlay at bottom */}
               <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-slate-800/20 to-transparent z-10 pointer-events-none"></div>
+              
+              {/* Scroll indicator */}
+              {!isAutoScrollEnabled && (
+                <button
+                  className="absolute bottom-4 right-4 z-20 p-2 bg-purple-600/80 hover:bg-purple-600 text-white rounded-full shadow-lg animate-bounce"
+                  onClick={scrollToBottom}
+                  aria-label="Scroll to bottom"
+                >
+                  <ArrowLeft className="w-4 h-4 transform rotate-90" />
+                </button>
+              )}
             </div>
 
             {/* Chat Input */}
