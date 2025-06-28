@@ -115,11 +115,14 @@ export function UnifiedProjectWorkspace() {
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [isDashboardChatAutoScrollEnabled, setIsDashboardChatAutoScrollEnabled] = useState(true);
   
   // Refs for scroll management
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const dashboardChatContainerRef = useRef<HTMLDivElement>(null);
+  const dashboardChatEndRef = useRef<HTMLDivElement>(null);
 
   // Get generation parameters from URL
   const prompt = searchParams.get('prompt') || '';
@@ -661,6 +664,14 @@ Content for ${tabId} tab is being generated...`;
     }
   };
 
+  // Dashboard chat scroll function
+  const scrollDashboardChatToBottom = () => {
+    setIsDashboardChatAutoScrollEnabled(true);
+    if (dashboardChatEndRef.current) {
+      dashboardChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const getTabIcon = (tabId: string) => {
     switch (tabId) {
       case 'analysis': return <AlertTriangle className="w-4 h-4" />;
@@ -686,6 +697,13 @@ Content for ${tabId} tab is being generated...`;
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isAutoScrollEnabled]);
+
+  // Auto-scroll for dashboard chat
+  useEffect(() => {
+    if (dashboardView === 'chat' && dashboardChatEndRef.current && isDashboardChatAutoScrollEnabled) {
+      dashboardChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isDashboardChatAutoScrollEnabled, dashboardView]);
 
   // Track scroll events for intelligent auto-scroll
   useEffect(() => {
@@ -1030,44 +1048,94 @@ Content for ${tabId} tab is being generated...`;
                   {dashboardView === 'chat' && (
                     <div className="space-y-4">
                       <div className="bg-slate-800/50 rounded-lg border border-slate-700/50 p-4">
-                        <h4 className="text-lg font-semibold text-white mb-3">AI Assistant Chat</h4>
+                        <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                          <MessageSquare className="w-5 h-5 text-purple-400" />
+                          AI Assistant Chat
+                        </h4>
                         
-                        {/* Chat messages container with constrained height */}
-                        <div className="h-64 overflow-y-auto scrollbar-elegant scroll-smooth bg-slate-900/30 rounded-lg p-3 mb-4">
-                          <div className="space-y-3">
-                            {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').map((message) => (
-                              <div key={message.id} className="flex items-start gap-3">
-                                <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0`}>
-                                  {message.agent === 'User' ? (
-                                    <User className="w-3 h-3 text-white" />
-                                  ) : (
-                                    <Bot className="w-3 h-3 text-white" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs text-slate-500 mb-1">{message.agent}</div>
-                                  <div className={`rounded-lg p-2 text-sm ${
-                                    message.agent === 'User' 
-                                      ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200'
-                                      : 'bg-slate-800/50 border border-slate-700/50 text-slate-300'
-                                  }`}>
-                                    {message.content}
+                        {/* Chat messages container with elegant scroll */}
+                        <div className="relative">
+                          {/* Fade overlay at top */}
+                          <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-slate-900/30 to-transparent z-10 pointer-events-none rounded-t-lg"></div>
+                          
+                          {/* Scrollable chat container */}
+                          <div 
+                            ref={dashboardChatContainerRef}
+                            className="h-64 overflow-y-auto scrollbar-elegant scroll-smooth bg-slate-900/30 rounded-lg p-3 mb-4"
+                            onScroll={() => {
+                              if (!dashboardChatContainerRef.current) return;
+                              
+                              const { scrollTop, scrollHeight, clientHeight } = dashboardChatContainerRef.current;
+                              // Check if scrolled to bottom
+                              const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
+                              
+                              if (isAtBottom && !isDashboardChatAutoScrollEnabled) {
+                                setIsDashboardChatAutoScrollEnabled(true);
+                              } else if (!isAtBottom && isDashboardChatAutoScrollEnabled) {
+                                setIsDashboardChatAutoScrollEnabled(false);
+                              }
+                            }}
+                          >
+                            <div className="space-y-3">
+                              {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').map((message) => (
+                                <div key={message.id} className="flex items-start gap-3 animate-in slide-in-from-bottom-1 duration-300">
+                                  <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0 shadow-lg`}>
+                                    {message.agent === 'User' ? (
+                                      <User className="w-3 h-3 text-white" />
+                                    ) : (
+                                      <Bot className="w-3 h-3 text-white" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs text-slate-500 font-medium">{message.agent}</span>
+                                      <span className="text-xs text-slate-600">
+                                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                    <div className={`rounded-lg p-3 text-sm transition-all duration-200 hover:scale-[1.01] ${
+                                      message.agent === 'User' 
+                                        ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200 shadow-purple-500/10'
+                                        : 'bg-slate-800/50 border border-slate-700/50 text-slate-300 shadow-slate-800/10'
+                                    } shadow-lg`}>
+                                      <p className="leading-relaxed">{message.content}</p>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
-                            {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').length === 0 && (
-                              <div className="text-center py-8">
-                                <MessageSquare className="w-8 h-8 text-slate-500 mx-auto mb-2" />
-                                <p className="text-slate-500 text-sm">Start a conversation with the AI assistant</p>
-                              </div>
-                            )}
-                            <div ref={chatEndRef} />
+                              ))}
+                              
+                              {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').length === 0 && (
+                                <div className="text-center py-12">
+                                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center mx-auto mb-4 border border-purple-500/20">
+                                    <MessageSquare className="w-8 h-8 text-purple-400" />
+                                  </div>
+                                  <p className="text-slate-400 text-sm font-medium mb-2">No conversations yet</p>
+                                  <p className="text-slate-500 text-xs">Start chatting with the AI assistant below</p>
+                                </div>
+                              )}
+                              
+                              <div ref={dashboardChatEndRef} />
+                            </div>
                           </div>
+                          
+                          {/* Fade overlay at bottom */}
+                          <div className="absolute bottom-4 left-0 right-0 h-3 bg-gradient-to-t from-slate-900/30 to-transparent z-10 pointer-events-none rounded-b-lg"></div>
+                          
+                          {/* Elegant scroll indicator */}
+                          {!isDashboardChatAutoScrollEnabled && messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').length > 0 && (
+                            <button
+                              className="absolute bottom-6 right-6 z-20 p-2 bg-gradient-to-r from-purple-600/90 to-blue-600/90 hover:from-purple-600 hover:to-blue-600 text-white rounded-full shadow-lg backdrop-blur-sm border border-purple-500/30 animate-bounce transition-all duration-200 hover:scale-110"
+                              onClick={scrollDashboardChatToBottom}
+                              aria-label="Scroll to bottom"
+                            >
+                              <ArrowLeft className="w-3 h-3 transform rotate-90" />
+                            </button>
+                          )}
                         </div>
                         
-                        <div className="text-xs text-slate-400">
-                          💡 Ask questions about your database project or get assistance with queries
+                        <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/30 rounded-lg p-2">
+                          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                          <span>AI assistant ready • Ask questions about your database project</span>
                         </div>
                       </div>
                     </div>
