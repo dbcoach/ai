@@ -9,8 +9,7 @@ import {
   Shield, 
   CreditCard,
   Code2,
-  ChevronRight,
-  MessageSquare
+  ChevronRight
 } from 'lucide-react';
 
 const navItems = [
@@ -31,12 +30,6 @@ const navItems = [
     href: '/settings/ai-preferences',
     icon: Brain,
     description: 'Configure AI behavior'
-  },
-  {
-    title: 'AI Chat',
-    href: '/chat',
-    icon: MessageSquare,
-    description: 'Chat with AI assistant'
   },
   {
     title: 'API Keys',

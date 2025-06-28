@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { DatabaseProject, DatabaseSession, databaseProjectsService } from '../../services/databaseProjectsService';
 import { SessionDetails } from './SessionDetails';
 import { CreateSessionModal } from './CreateSessionModal';
@@ -10,10 +10,10 @@ import {
   Database,
   Activity,
   Trash2,
+  Edit,
   Clock,
   Home,
-  Settings,
-  MessageSquare
+  Settings
 } from 'lucide-react';
 
 interface ProjectDetailsProps {
@@ -23,7 +23,6 @@ interface ProjectDetailsProps {
 }
 
 export function ProjectDetails({ project, onBack, onProjectDeleted }: ProjectDetailsProps) {
-  const navigate = useNavigate();
   const [sessions, setSessions] = useState<DatabaseSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<DatabaseSession | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -186,14 +185,6 @@ export function ProjectDetails({ project, onBack, onProjectDeleted }: ProjectDet
             {/* Actions */}
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => navigate(`/chat?project=${project.id}`)}
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg transition-all duration-200"
-                title="Chat about this project"
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span>Chat with AI</span>
-              </button>
-              <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700/50 rounded-lg transition-colors"
                 title="Delete Project"
@@ -208,22 +199,13 @@ export function ProjectDetails({ project, onBack, onProjectDeleted }: ProjectDet
         <div className="mb-6 p-4 rounded-xl bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 shadow-xl">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Work Sessions</h2>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => navigate(`/chat?project=${project.id}`)}
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-colors border border-slate-600/50"
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span>Ask AI</span>
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                <span>New Session</span>
-              </button>
-            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span>New Session</span>
+            </button>
           </div>
         </div>
 
