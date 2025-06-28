@@ -313,6 +313,25 @@ export function UnifiedProjectWorkspace() {
         await autoSaveCompleteProject();
       }
 
+      // Transition mode to show completed generation results
+      setMode(prev => ({ 
+        ...prev, 
+        isLiveGeneration: false,
+        type: project ? 'hybrid' : 'generation'
+      }));
+
+      // Add helpful completion message with action
+      setTimeout(() => {
+        const viewResultsMessage: AIMessage = {
+          id: `view_results_${Date.now()}`,
+          agent: 'System',
+          content: '🎉 Generation complete! Your database design is now available in the results panel. You can review each component by clicking the tabs above.',
+          timestamp: new Date(),
+          type: 'system'
+        };
+        setMessages(prev => [...prev, viewResultsMessage]);
+      }, 1000);
+
     } catch (error) {
       console.error('Generation failed:', error);
       const errorMessage: AIMessage = {
@@ -1084,10 +1103,15 @@ Content for ${tabId} tab is being generated...`;
               {/* Content Header */}
               <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  {mode.isLiveGeneration ? (
+                  {mode.isLiveGeneration || (tabs.some(tab => tab.content)) ? (
                     <>
                       <Database className="w-5 h-5 text-green-400" />
                       Generated Database Design
+                      {!isStreaming && !mode.isLiveGeneration && tabs.some(tab => tab.content) && (
+                        <span className="ml-2 px-2 py-1 bg-green-600/20 text-green-300 text-xs rounded-full border border-green-500/30">
+                          Complete
+                        </span>
+                      )}
                     </>
                   ) : (
                     <>
@@ -1097,12 +1121,14 @@ Content for ${tabId} tab is being generated...`;
                   )}
                 </h3>
                 <p className="text-sm text-slate-400">
-                  {mode.isLiveGeneration ? 'Real-time content generation' : 'Interactive database workspace'}
+                  {mode.isLiveGeneration ? 'Real-time content generation' : 
+                   tabs.some(tab => tab.content) ? 'Generated database design ready for review' : 
+                   'Interactive database workspace'}
                 </p>
               </div>
 
-              {mode.isLiveGeneration ? (
-                /* Generation Tabs */
+              {mode.isLiveGeneration || (tabs.some(tab => tab.content)) ? (
+                /* Generation Tabs - Show if live generation OR if any tab has content */
                 <>
                   <div className="flex border-b border-slate-700/50 bg-slate-800/20">
                     {tabs.map((tab) => (
@@ -1143,6 +1169,16 @@ Content for ${tabId} tab is being generated...`;
                                       <span className="text-slate-400 transition-all duration-300 ease-in-out">
                                         ({streamingContent.get(tab.id)?.position || 0}/{streamingContent.get(tab.id)?.full.length || 0})
                                       </span>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Generation Complete Badge */}
+                                {!isStreaming && !mode.isLiveGeneration && tab.content && (
+                                  <div className="absolute top-2 right-2 z-10 bg-green-800/90 backdrop-blur-sm rounded-lg px-3 py-1 border border-green-600/50 transition-all duration-300 ease-in-out">
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <CheckCircle className="w-3 h-3 text-green-400" />
+                                      <span className="text-green-300 font-medium">Complete</span>
                                     </div>
                                   </div>
                                 )}
