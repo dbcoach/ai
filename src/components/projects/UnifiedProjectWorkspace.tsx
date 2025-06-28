@@ -331,7 +331,7 @@ export function UnifiedProjectWorkspace() {
       let currentProject = project;
       if (!currentProject) {
         currentProject = await databaseProjectsService.createProject({
-          name: `Generated: ${prompt.substring(0, 50)}...`,
+          database_name: `Generated: ${prompt.substring(0, 50)}...`,
           description: `Auto-generated database for: ${prompt}`,
           database_type: dbType,
           user_id: user.id,
@@ -347,7 +347,7 @@ export function UnifiedProjectWorkspace() {
       if (!currentSession) {
         currentSession = await databaseProjectsService.createSession({
           project_id: currentProject.id,
-          name: `Live Generation - ${new Date().toLocaleString()}`,
+          session_name: `Live Generation - ${new Date().toLocaleString()}`,
           description: 'Auto-generated from live streaming',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -359,8 +359,10 @@ export function UnifiedProjectWorkspace() {
       // Save content as query
       await databaseProjectsService.createQuery({
         session_id: currentSession.id,
+        project_id: currentProject.id,
         query_text: content,
         query_type: tabId,
+        results_format: 'json',
         description: `${tabId} content`,
         created_at: new Date().toISOString()
       });
@@ -679,7 +681,7 @@ Content for ${tabId} tab is being generated...`;
                     <>
                       <Database className="w-4 h-4 text-blue-400" />
                       <span className="text-blue-300 font-medium">
-                        {project ? project.name : 'Database Workspace'}
+                        {project ? project.database_name : 'Database Workspace'}
                       </span>
                     </>
                   )}
@@ -720,7 +722,7 @@ Content for ${tabId} tab is being generated...`;
                   {project && !mode.isLiveGeneration && (
                     <button
                       onClick={() => {
-                        const newPrompt = `Enhance ${project.name}`;
+                        const newPrompt = `Enhance ${project.database_name}`;
                         const url = `/projects/${project.id}?prompt=${encodeURIComponent(newPrompt)}&dbType=${project.database_type}&mode=dbcoach`;
                         navigate(url);
                         window.location.reload();
@@ -862,7 +864,7 @@ Content for ${tabId} tab is being generated...`;
                             onClick={() => handleSessionSelect(session)}
                             className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30 hover:border-purple-500/50 cursor-pointer transition-all"
                           >
-                            <div className="font-medium text-white text-sm">{session.name}</div>
+                            <div className="font-medium text-white text-sm">{session.session_name}</div>
                             <div className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString()}</div>
                           </div>
                         ))}
@@ -996,7 +998,7 @@ Content for ${tabId} tab is being generated...`;
                   ) : (
                     <>
                       <BarChart3 className="w-5 h-5 text-blue-400" />
-                      {selectedSession ? `Session: ${selectedSession.name}` : 'Project Overview'}
+                      {selectedSession ? `Session: ${selectedSession.session_name}` : 'Project Overview'}
                     </>
                   )}
                 </h3>
@@ -1084,7 +1086,7 @@ Content for ${tabId} tab is being generated...`;
                   {selectedSession ? (
                     <div className="space-y-4">
                       <div className="bg-slate-900/50 rounded-lg border border-slate-700/50 p-4">
-                        <h4 className="text-lg font-semibold text-white mb-2">{selectedSession.name}</h4>
+                        <h4 className="text-lg font-semibold text-white mb-2">{selectedSession.session_name}</h4>
                         <p className="text-slate-400 mb-4">{selectedSession.description}</p>
                         
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1120,7 +1122,7 @@ Content for ${tabId} tab is being generated...`;
                         <p className="text-slate-400 mb-4">Select a session to view details or start a new generation.</p>
                         <button
                           onClick={() => {
-                            const newPrompt = `Enhance ${project?.name || 'database'}`;
+                            const newPrompt = `Enhance ${project?.database_name || 'database'}`;
                             const url = `/projects/${project?.id}?prompt=${encodeURIComponent(newPrompt)}&dbType=${project?.database_type || 'PostgreSQL'}&mode=dbcoach`;
                             navigate(url);
                             window.location.reload();
