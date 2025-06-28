@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { databaseProjectsService, DatabaseProject, ProjectStats } from '../../services/databaseProjectsService';
 import { ProjectsList } from './ProjectsList';
-import { ProjectDetails } from './ProjectDetails';
 import ProtectedRoute from '../auth/ProtectedRoute';
 import { 
   Database,
@@ -17,8 +16,8 @@ import {
 
 export function DatabaseProjectsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<DatabaseProject[]>([]);
-  const [selectedProject, setSelectedProject] = useState<DatabaseProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<ProjectStats>({ 
     total_projects: 0, 
@@ -62,25 +61,18 @@ export function DatabaseProjectsPage() {
 
 
   const handleProjectSelect = async (project: DatabaseProject) => {
-    setSelectedProject(project);
-    
     // Update last accessed time
     try {
       await databaseProjectsService.updateProjectAccess(project.id);
-      // Refresh the project list to show updated access time
-      loadProjects();
     } catch (error) {
       console.error('Error updating project access:', error);
     }
-  };
-
-  const handleBackToProjects = () => {
-    setSelectedProject(null);
-    loadProjects(); // Refresh in case anything was modified
+    
+    // Navigate to unified workspace
+    navigate(`/projects/${project.id}`);
   };
 
   const handleProjectDeleted = () => {
-    setSelectedProject(null);
     loadProjects();
     loadStats();
   };
@@ -102,18 +94,7 @@ export function DatabaseProjectsPage() {
     return date.toLocaleDateString();
   };
 
-  // If a project is selected, show its details
-  if (selectedProject) {
-    return (
-      <ProjectDetails 
-        project={selectedProject}
-        onBack={handleBackToProjects}
-        onProjectDeleted={handleProjectDeleted}
-      />
-    );
-  }
-
-  // Otherwise show the main projects list (bolt.new style)
+  // Show the main projects list
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
