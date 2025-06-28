@@ -41,20 +41,10 @@ export interface DatabaseQuery {
 }
 
 export interface CreateProjectRequest {
+  user_id: string;
   database_name: string;
   database_type: DatabaseProject['database_type'];
   description?: string;
-  metadata?: Record<string, any>;
-}
-
-export interface CreateProjectRequest {
-  name: string;
-  database_name?: string;
-  database_type: DatabaseProject['database_type'];
-  description?: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
   metadata?: Record<string, any>;
 }
 
@@ -132,13 +122,13 @@ class DatabaseProjectsService {
         .from('database_projects')
         .insert({
           user_id: request.user_id,
-          database_name: request.name,
+          database_name: request.database_name,
           database_type: request.database_type,
           description: request.description,
           metadata: request.metadata || {},
           last_accessed: now,
-          created_at: request.created_at || now,
-          updated_at: request.updated_at || now,
+          created_at: now,
+          updated_at: now,
         })
         .select()
         .single();

@@ -447,7 +447,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         try {
           const projectTitle = generateProjectTitle(prompt, dbType);
           
-          const project = await databaseProjectsService.createProject(user.id, {
+          const project = await databaseProjectsService.createProject({
+            user_id: user.id,
             database_name: projectTitle,
             database_type: dbType as any,
             description: prompt,
@@ -462,8 +463,11 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           // Create initial session with the generation results
           const session = await databaseProjectsService.createSession({
             project_id: project.id,
+            name: "Initial Generation",
             session_name: "Initial Generation",
-            description: `Database generated using ${mode === 'dbcoach' ? 'DBCoach Pro' : 'Standard'} mode`
+            description: `Database generated using ${mode === 'dbcoach' ? 'DBCoach Pro' : 'Standard'} mode`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           });
 
           // Store each generation step as a query in the session
@@ -481,7 +485,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
                 ...(step as any).agent && { agent: (step as any).agent }
               },
               results_format: 'json',
-              success: true
+              success: true,
+              created_at: new Date().toISOString()
             });
           }
 
