@@ -37,6 +37,7 @@ import ProtectedRoute from '../auth/ProtectedRoute';
 import { useGeneration } from '../../context/GenerationContext';
 import { DatabaseProject, DatabaseSession, DatabaseQuery, databaseProjectsService } from '../../services/databaseProjectsService';
 import { StreamingErrorBoundary } from '../streaming/StreamingErrorBoundary';
+import { enhancedDBCoachService, GenerationStep, GenerationProgress } from '../../services/enhancedDBCoachService';
 
 interface AIMessage {
   id: string;
@@ -88,11 +89,15 @@ export function UnifiedProjectWorkspace() {
   const [activeTab, setActiveTab] = useState('analysis');
   const [tabs, setTabs] = useState<GenerationTab[]>([
     { id: 'analysis', title: 'Requirements Analysis', status: 'pending', content: '', agent: 'Requirements Analyst' },
-    { id: 'schema', title: 'Schema Design', status: 'pending', content: '', agent: 'Schema Architect' },
+    { id: 'design', title: 'Schema Design', status: 'pending', content: '', agent: 'Schema Architect' },
     { id: 'implementation', title: 'Implementation', status: 'pending', content: '', agent: 'Implementation Specialist' },
     { id: 'validation', title: 'Quality Validation', status: 'pending', content: '', agent: 'Quality Assurance' },
     { id: 'visualization', title: 'Data Visualization', status: 'pending', content: '', agent: 'Data Visualization' }
   ]);
+  
+  // Real AI generation state
+  const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>([]);
+  const [currentProgress, setCurrentProgress] = useState<GenerationProgress | null>(null);
   
   // Dashboard state
   const [dashboardView, setDashboardView] = useState<'overview' | 'analytics' | 'queries' | 'chat'>('overview');
@@ -104,7 +109,6 @@ export function UnifiedProjectWorkspace() {
   });
   
   // Streaming state
-  const [streamingContent, setStreamingContent] = useState<Map<string, { full: string; displayed: string; position: number }>>(new Map());
   const [isStreaming, setIsStreaming] = useState(false);
   
   // Auto-save state
@@ -198,123 +202,86 @@ export function UnifiedProjectWorkspace() {
     };
     setMessages([userMessage]);
 
-    // Simulate AI agent workflow
-    const agents = [
-      {
-        name: 'Requirements Analyst',
-        tab: 'analysis',
-        color: 'from-blue-600 to-cyan-600',
-        tasks: [
-          'Analyzing domain and business context...',
-          'Extracting entities and relationships...',
-          'Identifying functional requirements...',
-          'Classifying complexity and scale...',
-          'Requirements analysis complete!'
-        ]
-      },
-      {
-        name: 'Schema Architect',
-        tab: 'schema',
-        color: 'from-purple-600 to-pink-600',
-        tasks: [
-          'Designing database schema structure...',
-          'Defining tables and relationships...',
-          'Applying normalization rules...',
-          'Planning indexes and constraints...',
-          'Schema design complete!'
-        ]
-      },
-      {
-        name: 'Implementation Specialist',
-        tab: 'implementation',
-        color: 'from-green-600 to-emerald-600',
-        tasks: [
-          'Generating CREATE TABLE statements...',
-          'Creating sample data scripts...',
-          'Building API endpoint examples...',
-          'Setting up migration files...',
-          'Implementation package ready!'
-        ]
-      },
-      {
-        name: 'Quality Assurance',
-        tab: 'validation',
-        color: 'from-orange-600 to-red-600',
-        tasks: [
-          'Validating schema design...',
-          'Checking performance optimization...',
-          'Reviewing security measures...',
-          'Testing data integrity...',
-          'Quality validation complete!'
-        ]
-      }
-    ];
-
     try {
-      // Start actual generation
+      // Start actual generation using context
       await startGeneration(prompt, dbType, generationMode as any);
 
-      // Process each agent
-      for (const agent of agents) {
-        // Update tab to active
-        setTabs(prev => prev.map(tab => 
-          tab.id === agent.tab ? { ...tab, status: 'active' } : tab
-        ));
-        setActiveTab(agent.tab);
-
-        // Add agent messages
-        for (const task of agent.tasks) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
+      // Start real AI generation using enhancedDBCoachService
+      const steps = await enhancedDBCoachService.generateDatabaseDesign(
+        prompt,
+        dbType,
+        (progress: GenerationProgress) => {
+          setCurrentProgress(progress);
           
-          const message: AIMessage = {
-            id: `${agent.name}_${Date.now()}_${Math.random()}`,
-            agent: agent.name,
-            content: task,
+          // Update tab status based on progress
+          setTabs(prev => prev.map(tab => {
+            if (tab.id === progress.step || (progress.step === 'design' && tab.id === 'design')) {
+              return { ...tab, status: progress.isComplete ? 'completed' : 'active' };
+            }
+            return tab;
+          }));
+
+          // Set active tab to current step
+          if (progress.step === 'design') {
+            setActiveTab('design');
+          } else {
+            setActiveTab(progress.step);
+          }
+
+          // Add AI reasoning message
+          const reasoningMessage: AIMessage = {
+            id: `${progress.agent}_${Date.now()}_${Math.random()}`,
+            agent: progress.agent,
+            content: progress.reasoning,
             timestamp: new Date(),
             type: 'reasoning'
           };
-          setMessages(prev => [...prev, message]);
+          setMessages(prev => [...prev, reasoningMessage]);
         }
+      );
 
-        // Generate content for this tab
-        const content = generateTabContent(agent.tab, prompt, dbType);
-        
-        // Start streaming content
-        setStreamingContent(prev => {
-          const newMap = new Map(prev);
-          newMap.set(agent.tab, { full: content, displayed: '', position: 0 });
-          return newMap;
-        });
+      // Store the generated steps
+      setGenerationSteps(steps);
 
-        // Wait for streaming to complete
-        const streamDuration = Math.max(2000, content.length * 50);
-        await new Promise(resolve => setTimeout(resolve, streamDuration));
+      // Update tabs with actual content from AI generation
+      setTabs(prev => prev.map(tab => {
+        const correspondingStep = steps.find(step => 
+          step.type === tab.id || (step.type === 'design' && tab.id === 'design')
+        );
+        if (correspondingStep) {
+          return {
+            ...tab,
+            content: correspondingStep.content,
+            status: 'completed'
+          };
+        }
+        return tab;
+      }));
 
-        // Mark tab as completed
+      // Generate visualization content (this can be enhanced later)
+      const visualizationTab = tabs.find(tab => tab.id === 'visualization');
+      if (visualizationTab) {
         setTabs(prev => prev.map(tab => 
-          tab.id === agent.tab ? { ...tab, status: 'completed' } : tab
+          tab.id === 'visualization' 
+            ? { ...tab, content: generateVisualizationContent(steps), status: 'completed' }
+            : tab
         ));
+      }
 
-        // Auto-save if enabled
-        if (autoSaveEnabled) {
-          await autoSaveGeneration(agent.tab, content);
-        }
+      // Auto-save if enabled
+      if (autoSaveEnabled) {
+        await autoSaveCompleteProject();
       }
 
       // Final completion message
       const completionMessage: AIMessage = {
         id: `completion_${Date.now()}`,
         agent: 'DB.Coach',
-        content: '✅ Database design complete! All components generated successfully.',
+        content: '✅ Database design complete! All components generated successfully with real AI analysis.',
         timestamp: new Date(),
         type: 'result'
       };
       setMessages(prev => [...prev, completionMessage]);
-
-      // Auto-save complete project
-      if (autoSaveEnabled) {
-        await autoSaveCompleteProject();
-      }
 
       // Transition mode to show completed generation results
       setMode(prev => ({ 
@@ -323,12 +290,12 @@ export function UnifiedProjectWorkspace() {
         type: project ? 'hybrid' : 'generation'
       }));
 
-      // Add helpful completion message with action
+      // Add helpful completion message
       setTimeout(() => {
         const viewResultsMessage: AIMessage = {
           id: `view_results_${Date.now()}`,
           agent: 'System',
-          content: '🎉 Generation complete! Your database design is now available in the results panel. You can review each component by clicking the tabs above.',
+          content: '🎉 Real AI generation complete! Your database design is now available in the results panel with comprehensive analysis, schema design, implementation, and quality validation.',
           timestamp: new Date(),
           type: 'system'
         };
@@ -350,6 +317,50 @@ export function UnifiedProjectWorkspace() {
       setIsStreaming(false);
     }
   }, [prompt, dbType, generationMode, startGeneration, autoSaveEnabled]);
+
+  // Helper function to generate visualization content
+  const generateVisualizationContent = (steps: GenerationStep[]): string => {
+    const analysisStep = steps.find(step => step.type === 'analysis');
+    const designStep = steps.find(step => step.type === 'design');
+    
+    if (!analysisStep || !designStep) {
+      return 'Visualization data not available';
+    }
+
+    return `# Database Visualization & Diagrams
+
+## Entity Relationship Diagram
+
+\`\`\`mermaid
+erDiagram
+    %% Auto-generated based on schema design
+    %% This would be enhanced with actual schema parsing
+    
+    USER {
+        int id PK
+        string email
+        string name
+        datetime created_at
+    }
+    
+    %% Additional entities would be parsed from design step
+    %% and rendered as interactive diagrams
+\`\`\`
+
+## Schema Statistics
+- **Complexity Level**: ${JSON.parse(analysisStep.content)?.complexity || 'Medium'}
+- **Estimated Tables**: 5-15 (based on requirements)
+- **Relationship Density**: Medium
+- **Recommended Indexes**: Auto-detected from schema
+
+## Interactive Features
+- Zoom and pan controls
+- Table relationship highlighting
+- Field type indicators
+- Performance impact visualization
+
+*Note: Enhanced visualization with interactive ER diagrams and schema metrics will be implemented in the next iteration.*`;
+  };
 
   const autoSaveGeneration = async (tabId: string, content: string) => {
     try {
@@ -427,181 +438,7 @@ export function UnifiedProjectWorkspace() {
     }
   };
 
-  const generateTabContent = (tabId: string, prompt: string, dbType: string): string => {
-    // Same content generation logic as LiveStreamingPage
-    switch (tabId) {
-      case 'analysis':
-        return `# Requirements Analysis
 
-## Business Domain Analysis
-- Domain: ${prompt.toLowerCase().includes('e-commerce') ? 'E-commerce Platform' : prompt.toLowerCase().includes('blog') ? 'Content Management' : 'Custom Application'}
-- Scale: Medium (estimated 10K-100K users)
-- Complexity: Moderate (10-20 entities)
-
-## Key Requirements
-- User management and authentication
-- Core business entities and relationships
-- Data integrity and validation
-- Performance optimization
-- Security compliance
-
-## Entities Identified
-1. Users/Accounts
-2. Primary business objects
-3. Relationships and associations
-4. Supporting data structures
-
-## Technical Specifications
-- Database: ${dbType}
-- Expected Load: Moderate
-- Availability: High
-- Consistency: Strong`;
-
-      case 'schema':
-        return `# Database Schema Design
-
-## Core Tables
-
-\`\`\`sql
--- Users table
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Main business entity
-CREATE TABLE products (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    price DECIMAL(10,2) NOT NULL,
-    created_by INTEGER REFERENCES users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Relationship table
-CREATE TABLE user_products (
-    user_id INTEGER REFERENCES users(id),
-    product_id INTEGER REFERENCES products(id),
-    relationship_type VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, product_id)
-);
-\`\`\`
-
-## Indexes
-\`\`\`sql
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_products_name ON products(name);
-CREATE INDEX idx_user_products_user_id ON user_products(user_id);
-\`\`\``;
-
-      case 'implementation':
-        return `# Implementation Package
-
-## Migration Scripts
-
-\`\`\`sql
--- Migration 001: Create users table
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Add triggers for updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-\`\`\`
-
-## API Endpoints
-\`\`\`javascript
-// User management
-GET    /api/users
-POST   /api/users
-GET    /api/users/:id
-PUT    /api/users/:id
-DELETE /api/users/:id
-\`\`\``;
-
-      case 'validation':
-        return `# Quality Validation Report
-
-## Schema Validation ✅
-- All tables have primary keys
-- Foreign key relationships properly defined
-- Appropriate data types selected
-- Naming conventions followed
-
-## Performance Review ✅
-- Indexes created for frequently queried columns
-- Query optimization opportunities identified
-- Connection pooling recommended
-- Caching strategy outlined
-
-## Security Audit ✅
-- Password hashing implemented
-- SQL injection prevention measures
-- Input validation required
-- Access control mechanisms
-
-## Production Readiness ✅
-- All constraints properly defined
-- Error handling implemented
-- Backup strategy outlined
-- Deployment scripts ready`;
-
-      default:
-        return `# ${tabId.charAt(0).toUpperCase() + tabId.slice(1)}
-
-Content for ${tabId} tab is being generated...`;
-    }
-  };
-
-  // Character streaming effect
-  useEffect(() => {
-    if (!isStreaming) return;
-
-    const interval = setInterval(() => {
-      setStreamingContent(prev => {
-        const newMap = new Map(prev);
-        let hasChanges = false;
-
-        newMap.forEach((data, tabId) => {
-          if (data.position < data.full.length) {
-            const charsToAdd = Math.min(3, data.full.length - data.position);
-            data.displayed = data.full.substring(0, data.position + charsToAdd);
-            data.position += charsToAdd;
-            hasChanges = true;
-
-            setTabs(prevTabs => prevTabs.map(tab => 
-              tab.id === tabId ? { ...tab, content: data.displayed } : tab
-            ));
-          }
-        });
-
-        if (!hasChanges) {
-          setIsStreaming(false);
-        }
-
-        return newMap;
-      });
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [isStreaming]);
 
   const handleUserMessage = useCallback(() => {
     if (!userInput.trim()) return;
@@ -1251,10 +1088,10 @@ Content for ${tabId} tab is being generated...`;
                                       <div className="flex items-center gap-2 text-xs">
                                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                                         <span className="text-green-300 font-medium transition-all duration-300 ease-in-out">
-                                          {Math.round((streamingContent.get(tab.id)?.position || 0) / (streamingContent.get(tab.id)?.full.length || 1) * 100)}%
+                                          Generating...
                                         </span>
                                         <span className="text-slate-400 transition-all duration-300 ease-in-out">
-                                          ({streamingContent.get(tab.id)?.position || 0}/{streamingContent.get(tab.id)?.full.length || 0})
+                                          AI Processing
                                         </span>
                                       </div>
                                     </div>
