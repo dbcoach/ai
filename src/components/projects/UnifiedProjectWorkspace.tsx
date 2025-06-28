@@ -111,8 +111,14 @@ export function UnifiedProjectWorkspace() {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
-  // Refs
+  // Scroll management state
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+  const [lastScrollTop, setLastScrollTop] = useState(0);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  
+  // Refs for scroll management
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Get generation parameters from URL
@@ -588,6 +594,8 @@ Content for ${tabId} tab is being generated...`;
 
     setMessages(prev => [...prev, message]);
     setUserInput('');
+    // Enable auto-scroll when user sends a message
+    setIsAutoScrollEnabled(true);
 
     // Simulate AI response
     setTimeout(() => {
@@ -626,6 +634,14 @@ Content for ${tabId} tab is being generated...`;
     return colors[agent as keyof typeof colors] || 'from-slate-600 to-slate-700';
   };
 
+  // Scroll helper function to programmatically scroll to bottom
+  const scrollToBottom = () => {
+    setIsAutoScrollEnabled(true);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const getTabIcon = (tabId: string) => {
     switch (tabId) {
       case 'analysis': return <AlertTriangle className="w-4 h-4" />;
@@ -645,14 +661,45 @@ Content for ${tabId} tab is being generated...`;
     }
   };
 
-  // Auto-scroll effects
+  // Auto-scroll effects with intelligent scroll management
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (messagesEndRef.current && isAutoScrollEnabled) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isAutoScrollEnabled]);
+
+  // Track scroll events for intelligent auto-scroll
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      
+      // User is scrolling up (disable auto-scroll)
+      if (scrollTop < lastScrollTop) {
+        setIsUserScrolling(true);
+        setIsAutoScrollEnabled(false);
+      }
+      
+      // User has scrolled near bottom (re-enable auto-scroll)
+      if (scrollHeight - scrollTop - clientHeight < 10) {
+        setIsAutoScrollEnabled(true);
+        setIsUserScrolling(false);
+      }
+      
+      setLastScrollTop(scrollTop);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [lastScrollTop]);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (chatEndRef.current && isAutoScrollEnabled) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isAutoScrollEnabled]);
 
   return (
     <StreamingErrorBoundary>
@@ -758,9 +805,25 @@ Content for ${tabId} tab is being generated...`;
               {mode.isLiveGeneration ? (
                 /* Agent Stream Content */
                 <div className="flex-1 relative">
+                  {/* Fade overlay at top */}
                   <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-slate-800/20 to-transparent z-10 pointer-events-none"></div>
                   
-                  <div className="h-full p-4 overflow-y-auto scrollbar-elegant scroll-smooth">
+                  {/* Scrollable content with fixed height */}
+                  <div 
+                    ref={messagesContainerRef}
+                    className="h-full p-4 overflow-y-auto scrollbar-elegant scroll-smooth"
+                    onScroll={() => {
+                      if (!messagesContainerRef.current) return;
+                      
+                      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+                      // Check if scrolled to bottom
+                      const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
+                      
+                      if (isAtBottom && !isAutoScrollEnabled) {
+                        setIsAutoScrollEnabled(true);
+                      }
+                    }}
+                  >
                     <div className="space-y-4">
                       {messages.map((message) => (
                         <div key={message.id} className="flex items-start gap-3">
@@ -818,7 +881,19 @@ Content for ${tabId} tab is being generated...`;
                     </div>
                   </div>
                   
+                  {/* Fade overlay at bottom */}
                   <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-slate-800/20 to-transparent z-10 pointer-events-none"></div>
+                  
+                  {/* Scroll indicator when not at bottom */}
+                  {!isAutoScrollEnabled && (
+                    <button
+                      className="absolute bottom-4 right-4 z-20 p-2 bg-purple-600/80 hover:bg-purple-600 text-white rounded-full shadow-lg animate-bounce transition-all duration-200"
+                      onClick={scrollToBottom}
+                      aria-label="Scroll to bottom"
+                    >
+                      <ArrowLeft className="w-4 h-4 transform rotate-90" />
+                    </button>
+                  )}
                 </div>
               ) : project && (
                 /* Project Dashboard Content */
@@ -934,29 +1009,32 @@ Content for ${tabId} tab is being generated...`;
 
                   {dashboardView === 'chat' && (
                     <div className="h-full flex flex-col">
-                      <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                        {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').map((message) => (
-                          <div key={message.id} className="flex items-start gap-3">
-                            <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0`}>
-                              {message.agent === 'User' ? (
-                                <User className="w-3 h-3 text-white" />
-                              ) : (
-                                <Bot className="w-3 h-3 text-white" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs text-slate-500 mb-1">{message.agent}</div>
-                              <div className={`rounded-lg p-2 text-sm ${
-                                message.agent === 'User' 
-                                  ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200'
-                                  : 'bg-slate-800/50 border border-slate-700/50 text-slate-300'
-                              }`}>
-                                {message.content}
+                      <div className="flex-1 relative">
+                        {/* Chat messages container with fixed height */}
+                        <div className="h-full overflow-y-auto scrollbar-elegant scroll-smooth space-y-3 pr-2">
+                          {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').map((message) => (
+                            <div key={message.id} className="flex items-start gap-3">
+                              <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0`}>
+                                {message.agent === 'User' ? (
+                                  <User className="w-3 h-3 text-white" />
+                                ) : (
+                                  <Bot className="w-3 h-3 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs text-slate-500 mb-1">{message.agent}</div>
+                                <div className={`rounded-lg p-2 text-sm ${
+                                  message.agent === 'User' 
+                                    ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200'
+                                    : 'bg-slate-800/50 border border-slate-700/50 text-slate-300'
+                                }`}>
+                                  {message.content}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                        <div ref={chatEndRef} />
+                          ))}
+                          <div ref={chatEndRef} />
+                        </div>
                       </div>
                     </div>
                   )}
