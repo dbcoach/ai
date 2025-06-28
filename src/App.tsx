@@ -4,6 +4,7 @@ import LandingPage from './components/LandingPage';
 import { Settings } from './components/Settings';
 import { DatabaseProjectsPage } from './components/projects/DatabaseProjectsPage';
 import { StreamingPage } from './components/streaming/StreamingPage';
+import { LiveStreamingPage } from './components/streaming/LiveStreamingPage';
 import { GenerationProvider } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { AuthErrorHandler } from './components/auth/AuthErrorHandler';
@@ -15,7 +16,8 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/projects" element={<DatabaseProjectsPage />} />
-        <Route path="/streaming" element={<StreamingPage />} />
+        <Route path="/streaming" element={<LiveStreamingPage />} />
+        <Route path="/streaming-old" element={<StreamingPage />} />
         <Route path="/settings/*" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
