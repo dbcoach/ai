@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   high_contrast BOOLEAN DEFAULT false,
   
   -- AI preferences
-  ai_model TEXT DEFAULT 'gemini-2.0-flash',
+  ai_model TEXT DEFAULT 'gemini-2.5-flash-lite-preview-06-17',
   temperature DECIMAL(3,2) DEFAULT 0.7 CHECK (temperature >= 0 AND temperature <= 2),
   auto_suggestions BOOLEAN DEFAULT true,
   
