@@ -81,54 +81,7 @@ export function LiveStreamingPage() {
     }
   }, [prompt, navigate]);
 
-  // Initialize generation
-  useEffect(() => {
-    if (prompt && user && !isGenerating) {
-      startLiveGeneration().catch(error => {
-        console.error('Failed to start live generation:', error);
-      });
-    }
-  }, [prompt, user, isGenerating, startLiveGeneration]);
-
-  // Auto-scroll messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Character streaming effect
-  useEffect(() => {
-    if (!isStreaming) return;
-
-    const interval = setInterval(() => {
-      setStreamingContent(prev => {
-        const newMap = new Map(prev);
-        let hasChanges = false;
-
-        newMap.forEach((data, tabId) => {
-          if (data.position < data.full.length) {
-            const charsToAdd = Math.min(3, data.full.length - data.position); // 3 chars at a time
-            data.displayed = data.full.substring(0, data.position + charsToAdd);
-            data.position += charsToAdd;
-            hasChanges = true;
-
-            // Update tab content
-            setTabs(prevTabs => prevTabs.map(tab => 
-              tab.id === tabId ? { ...tab, content: data.displayed } : tab
-            ));
-          }
-        });
-
-        if (!hasChanges) {
-          setIsStreaming(false);
-        }
-
-        return newMap;
-      });
-    }, 50); // 20 chars per second
-
-    return () => clearInterval(interval);
-  }, [isStreaming]);
-
+  // Define the generation function
   const startLiveGeneration = useCallback(async () => {
     setIsGenerating(true);
     setIsStreaming(true);
@@ -265,7 +218,55 @@ export function LiveStreamingPage() {
       setIsGenerating(false);
       setIsStreaming(false);
     }
-  }, [prompt, dbType, mode, startGeneration, streamingContent]);
+  }, [prompt, dbType, mode, startGeneration]);
+
+  // Initialize generation
+  useEffect(() => {
+    if (prompt && user && !isGenerating) {
+      startLiveGeneration().catch(error => {
+        console.error('Failed to start live generation:', error);
+      });
+    }
+  }, [prompt, user, isGenerating, startLiveGeneration]);
+
+  // Auto-scroll messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Character streaming effect
+  useEffect(() => {
+    if (!isStreaming) return;
+
+    const interval = setInterval(() => {
+      setStreamingContent(prev => {
+        const newMap = new Map(prev);
+        let hasChanges = false;
+
+        newMap.forEach((data, tabId) => {
+          if (data.position < data.full.length) {
+            const charsToAdd = Math.min(3, data.full.length - data.position); // 3 chars at a time
+            data.displayed = data.full.substring(0, data.position + charsToAdd);
+            data.position += charsToAdd;
+            hasChanges = true;
+
+            // Update tab content
+            setTabs(prevTabs => prevTabs.map(tab => 
+              tab.id === tabId ? { ...tab, content: data.displayed } : tab
+            ));
+          }
+        });
+
+        if (!hasChanges) {
+          setIsStreaming(false);
+        }
+
+        return newMap;
+      });
+    }, 50); // 20 chars per second
+
+    return () => clearInterval(interval);
+  }, [isStreaming]);
 
   const generateTabContent = (tabId: string, prompt: string, dbType: string): string => {
     switch (tabId) {
