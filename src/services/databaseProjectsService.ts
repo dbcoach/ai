@@ -98,45 +98,6 @@ class DatabaseProjectsService {
   }
 
   /**
-   * Alias for getProjects - for compatibility
-   */
-  async getUserProjects(userId: string): Promise<DatabaseProject[]> {
-    return this.getProjects(userId);
-  }
-
-  /**
-   * Get a specific database project by ID
-   */
-  async getProject(projectId: string): Promise<DatabaseProject | null> {
-    try {
-      const { data, error } = await supabase
-        .from('database_projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null; // Project not found
-        }
-        throw error;
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching project:', error);
-      
-      // Handle auth errors gracefully
-      const handled = await handleAuthError(error);
-      if (handled) {
-        return null;
-      }
-      
-      throw error;
-    }
-  }
-
-  /**
    * Create a new database project
    */
   async createProject(userId: string, request: CreateProjectRequest): Promise<DatabaseProject> {
