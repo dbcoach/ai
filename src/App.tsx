@@ -3,8 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LandingPage from './components/LandingPage';
 import { Settings } from './components/Settings';
 import { DatabaseProjectsPage } from './components/projects/DatabaseProjectsPage';
+import { ChatPage } from './components/chat/ChatPage';
 import { GenerationProvider } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatProvider } from './contexts/ChatContext';
 import { AuthErrorHandler } from './components/auth/AuthErrorHandler';
 import { AuthDebugPanel } from './components/debug/AuthDebugPanel';
 
@@ -14,6 +16,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/projects" element={<DatabaseProjectsPage />} />
+        <Route path="/chat" element={<ChatPage />} />
         <Route path="/settings/*" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -28,7 +31,9 @@ function App() {
       <AuthErrorHandler>
         <Router>
           <GenerationProvider>
-            <AppContent />
+            <ChatProvider>
+              <AppContent />
+            </ChatProvider>
           </GenerationProvider>
         </Router>
       </AuthErrorHandler>

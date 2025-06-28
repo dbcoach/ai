@@ -7,7 +7,12 @@
       "Bash(npm run build:*)",
       "Bash(npm run lint)",
       "Bash(npx supabase migration:*)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(npx tsc:*)",
+      "Bash(rg:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": []
   }

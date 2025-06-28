@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Zap, ArrowRight, Bot, Sparkles, Settings } from 'lucide-react';
+import { Database, Zap, ArrowRight, Bot, Sparkles, Settings, MessageSquare } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DBCoachMode } from '../context/GenerationContext';
 import AuthButton from './auth/AuthButton';
@@ -91,6 +91,13 @@ const LandingPage: React.FC = () => {
               >
                 <Database className="w-4 h-4" />
                 <span>My Projects</span>
+              </Link>
+              <Link 
+                to="/chat" 
+                className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700/50"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>AI Chat</span>
               </Link>
               <Link 
                 to="/settings" 
