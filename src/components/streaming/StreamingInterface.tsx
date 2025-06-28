@@ -14,6 +14,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { streamingService, StreamingTask, StreamChunk } from '../../services/streamingService';
+import { StreamingErrorBoundary } from './StreamingErrorBoundary';
 
 interface StreamingInterfaceProps {
   prompt: string;
@@ -279,7 +280,8 @@ export function StreamingInterface({
   };
 
   return (
-    <div className={`h-full bg-slate-900/20 rounded-xl border border-slate-700/50 overflow-hidden ${className}`}>
+    <StreamingErrorBoundary>
+      <div className={`h-full bg-slate-900/20 rounded-xl border border-slate-700/50 overflow-hidden ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-slate-700/50 bg-slate-800/30">
         <div className="flex items-center gap-4">
@@ -522,6 +524,7 @@ export function StreamingInterface({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </StreamingErrorBoundary>
   );
 }

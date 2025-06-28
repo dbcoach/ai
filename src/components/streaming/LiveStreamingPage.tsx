@@ -23,6 +23,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../auth/ProtectedRoute';
 import { useGeneration } from '../../context/GenerationContext';
 import { databaseProjectsService } from '../../services/databaseProjectsService';
+import { StreamingErrorBoundary } from './StreamingErrorBoundary';
 
 interface AIMessage {
   id: string;
@@ -83,9 +84,11 @@ export function LiveStreamingPage() {
   // Initialize generation
   useEffect(() => {
     if (prompt && user && !isGenerating) {
-      startLiveGeneration();
+      startLiveGeneration().catch(error => {
+        console.error('Failed to start live generation:', error);
+      });
     }
-  }, [prompt, user]);
+  }, [prompt, user, isGenerating, startLiveGeneration]);
 
   // Auto-scroll messages
   useEffect(() => {
@@ -126,7 +129,7 @@ export function LiveStreamingPage() {
     return () => clearInterval(interval);
   }, [isStreaming]);
 
-  const startLiveGeneration = async () => {
+  const startLiveGeneration = useCallback(async () => {
     setIsGenerating(true);
     setIsStreaming(true);
 
@@ -228,18 +231,9 @@ export function LiveStreamingPage() {
           return newMap;
         });
 
-        // Wait for streaming to complete
-        await new Promise(resolve => {
-          const checkStreaming = () => {
-            const data = streamingContent.get(agent.tab);
-            if (data && data.position >= data.full.length) {
-              resolve(void 0);
-            } else {
-              setTimeout(checkStreaming, 100);
-            }
-          };
-          checkStreaming();
-        });
+        // Wait for streaming to complete - simplified approach
+        const streamDuration = Math.max(2000, content.length * 50); // 50ms per character minimum
+        await new Promise(resolve => setTimeout(resolve, streamDuration));
 
         // Mark tab as completed
         setTabs(prev => prev.map(tab => 
@@ -271,7 +265,7 @@ export function LiveStreamingPage() {
       setIsGenerating(false);
       setIsStreaming(false);
     }
-  };
+  }, [prompt, dbType, mode, startGeneration, streamingContent]);
 
   const generateTabContent = (tabId: string, prompt: string, dbType: string): string => {
     switch (tabId) {
@@ -449,7 +443,7 @@ Content for ${tabId} tab is being generated...`;
     }
   };
 
-  const handleUserMessage = () => {
+  const handleUserMessage = useCallback(() => {
     if (!userInput.trim()) return;
 
     const message: AIMessage = {
@@ -474,7 +468,7 @@ Content for ${tabId} tab is being generated...`;
       };
       setMessages(prev => [...prev, aiResponse]);
     }, 1000);
-  };
+  }, [userInput]);
 
   const getTabIcon = (tabId: string) => {
     switch (tabId) {
@@ -510,8 +504,9 @@ Content for ${tabId} tab is being generated...`;
   if (!prompt) return null;
 
   return (
-    <ProtectedRoute>
-      <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+    <StreamingErrorBoundary>
+      <ProtectedRoute>
+        <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
         {/* Header */}
         <nav className="p-4 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
           <div className="flex items-center justify-between">
@@ -700,6 +695,7 @@ Content for ${tabId} tab is being generated...`;
           </div>
         </div>
       </div>
-    </ProtectedRoute>
+      </ProtectedRoute>
+    </StreamingErrorBoundary>
   );
 }
