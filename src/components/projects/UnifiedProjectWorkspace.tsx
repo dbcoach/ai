@@ -214,6 +214,12 @@ export function UnifiedProjectWorkspace() {
   };
 
   const startLiveGeneration = useCallback(async () => {
+    // Prevent multiple generations from running simultaneously
+    if (isGenerating) {
+      console.log('Generation already in progress, skipping...');
+      return;
+    }
+
     setIsGenerating(true);
     setIsStreaming(true);
     setMode(prev => ({ ...prev, type: 'hybrid', isLiveGeneration: true }));
@@ -229,9 +235,6 @@ export function UnifiedProjectWorkspace() {
     setMessages([userMessage]);
 
     try {
-      // Start actual generation using context
-      await startGeneration(prompt, dbType, generationMode as any);
-
       // Start real AI generation using enhancedDBCoachService
       const steps = await enhancedDBCoachService.generateDatabaseDesign(
         prompt,
@@ -1264,7 +1267,7 @@ ${tables.map(table => {
               </div>
 
               {/* Content Based on Mode */}
-              {mode.isLiveGeneration ? (
+              {mode.isLiveGeneration || (messages.length > 1) ? (
                 /* Agent Stream Content - Fixed Height Chat Container */
                 <div className="flex-1 flex flex-col overflow-hidden">
                   <div className="flex-1 relative bg-slate-900/20 rounded-lg m-2 border border-slate-700/30 min-h-0">
@@ -1272,8 +1275,12 @@ ${tables.map(table => {
                     <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 border-b border-slate-700/50 p-2 z-20 rounded-t-lg">
                       <div className="flex items-center gap-2 text-xs text-slate-300">
                         <MessageSquare className="w-3 h-3 text-purple-400" />
-                        <span>Live Chat Stream</span>
-                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse ml-auto" />
+                        <span>{mode.isLiveGeneration ? 'Live Chat Stream' : 'AI Chat History'}</span>
+                        <div className={`w-1.5 h-1.5 rounded-full ml-auto ${
+                          mode.isLiveGeneration 
+                            ? 'bg-green-400 animate-pulse' 
+                            : 'bg-blue-400'
+                        }`} />
                       </div>
                     </div>
                     
