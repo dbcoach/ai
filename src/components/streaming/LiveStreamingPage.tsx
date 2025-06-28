@@ -542,7 +542,7 @@ Content for ${tabId} tab is being generated...`;
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel: AI Agent Stream + Chat */}
-          <div className="w-1/2 border-r border-slate-700/50 bg-slate-800/20 flex flex-col">
+          <div className="w-[30%] min-w-[300px] lg:w-[30%] md:w-[35%] sm:w-[40%] border-r border-slate-700/50 bg-slate-800/20 flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -553,7 +553,12 @@ Content for ${tabId} tab is being generated...`;
             </div>
 
             {/* Messages Stream */}
-            <div className="flex-1 p-4 overflow-y-auto">
+            <div className="flex-1 relative">
+              {/* Fade overlay at top */}
+              <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-slate-800/20 to-transparent z-10 pointer-events-none"></div>
+              
+              {/* Scrollable content */}
+              <div className="h-full p-4 overflow-y-auto scrollbar-elegant scroll-smooth">
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div key={message.id} className="flex items-start gap-3">
@@ -607,6 +612,10 @@ Content for ${tabId} tab is being generated...`;
                 
                 <div ref={messagesEndRef} />
               </div>
+              </div>
+              
+              {/* Fade overlay at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-slate-800/20 to-transparent z-10 pointer-events-none"></div>
             </div>
 
             {/* Chat Input */}
@@ -632,7 +641,7 @@ Content for ${tabId} tab is being generated...`;
           </div>
 
           {/* Right Panel: Results with Tabs */}
-          <div className="w-1/2 flex flex-col">
+          <div className="w-[70%] lg:w-[70%] md:w-[65%] sm:w-[60%] flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -669,26 +678,49 @@ Content for ${tabId} tab is being generated...`;
                   key={tab.id}
                   className={`${activeTab === tab.id ? 'block' : 'hidden'}`}
                 >
-                  <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50 min-h-[400px]">
-                    {tab.content ? (
-                      <div className="text-slate-200 whitespace-pre-wrap font-mono text-sm leading-relaxed">
-                        {tab.content}
-                        {tab.status === 'active' && isStreaming && (
-                          <span className="inline-block w-2 h-5 bg-green-400 animate-pulse ml-1" />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-40 text-slate-500">
-                        {tab.status === 'pending' ? (
-                          <span>Waiting for {tab.agent}...</span>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Generating content...</span>
+                  <div className="bg-slate-900/50 rounded-lg border border-slate-700/50 min-h-[400px] overflow-hidden">
+                    {/* Content area with position indicator */}
+                    <div className="relative h-full">
+                      {tab.content ? (
+                        <>
+                          {/* Position indicator */}
+                          {tab.status === 'active' && isStreaming && (
+                            <div className="absolute top-2 right-2 z-10 bg-slate-800/90 backdrop-blur-sm rounded-lg px-3 py-1 border border-slate-600/50 transition-all duration-300 ease-in-out">
+                              <div className="flex items-center gap-2 text-xs">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                <span className="text-green-300 font-medium transition-all duration-300 ease-in-out">
+                                  {Math.round((streamingContent.get(tab.id)?.position || 0) / (streamingContent.get(tab.id)?.full.length || 1) * 100)}%
+                                </span>
+                                <span className="text-slate-400 transition-all duration-300 ease-in-out">
+                                  ({streamingContent.get(tab.id)?.position || 0}/{streamingContent.get(tab.id)?.full.length || 0})
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Content */}
+                          <div className="h-full p-4 overflow-y-auto scrollbar-elegant scroll-smooth">
+                            <div className="text-slate-200 whitespace-pre-wrap font-mono text-sm leading-relaxed transition-all duration-300 ease-in-out">
+                              {tab.content}
+                              {tab.status === 'active' && isStreaming && (
+                                <span className="inline-block w-2 h-5 bg-green-400 animate-pulse ml-1 transition-opacity duration-300" />
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    )}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-center h-40 text-slate-500">
+                          {tab.status === 'pending' ? (
+                            <span>Waiting for {tab.agent}...</span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>Generating content...</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
