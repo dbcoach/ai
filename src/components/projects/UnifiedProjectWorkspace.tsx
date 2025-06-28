@@ -757,7 +757,8 @@ Content for ${tabId} tab is being generated...`;
           {/* Main Content */}
           <div className="flex-1 flex overflow-hidden">
             {/* Left Panel - Agent Stream or Project Navigation */}
-            <div className="w-[30%] min-w-[350px] lg:w-[30%] md:w-[35%] sm:w-[40%] border-r border-slate-700/50 bg-slate-800/20 flex flex-col">
+            <div className="w-[30%] min-w-[350px] max-w-[500px] lg:w-[30%] md:w-[35%] sm:w-[40%] border-r border-slate-700/50 bg-slate-800/20 flex flex-col"
+                 style={{ height: 'calc(100vh - 80px)' }}>
               
               {/* Mode Toggle */}
               <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
@@ -1008,32 +1009,46 @@ Content for ${tabId} tab is being generated...`;
                   )}
 
                   {dashboardView === 'chat' && (
-                    <div className="h-full flex flex-col">
-                      <div className="flex-1 relative">
-                        {/* Chat messages container with fixed height */}
-                        <div className="h-full overflow-y-auto scrollbar-elegant scroll-smooth space-y-3 pr-2">
-                          {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').map((message) => (
-                            <div key={message.id} className="flex items-start gap-3">
-                              <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0`}>
-                                {message.agent === 'User' ? (
-                                  <User className="w-3 h-3 text-white" />
-                                ) : (
-                                  <Bot className="w-3 h-3 text-white" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-xs text-slate-500 mb-1">{message.agent}</div>
-                                <div className={`rounded-lg p-2 text-sm ${
-                                  message.agent === 'User' 
-                                    ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200'
-                                    : 'bg-slate-800/50 border border-slate-700/50 text-slate-300'
-                                }`}>
-                                  {message.content}
+                    <div className="space-y-4">
+                      <div className="bg-slate-800/50 rounded-lg border border-slate-700/50 p-4">
+                        <h4 className="text-lg font-semibold text-white mb-3">AI Assistant Chat</h4>
+                        
+                        {/* Chat messages container with constrained height */}
+                        <div className="h-64 overflow-y-auto scrollbar-elegant scroll-smooth bg-slate-900/30 rounded-lg p-3 mb-4">
+                          <div className="space-y-3">
+                            {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').map((message) => (
+                              <div key={message.id} className="flex items-start gap-3">
+                                <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${getAgentColor(message.agent)} flex items-center justify-center flex-shrink-0`}>
+                                  {message.agent === 'User' ? (
+                                    <User className="w-3 h-3 text-white" />
+                                  ) : (
+                                    <Bot className="w-3 h-3 text-white" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs text-slate-500 mb-1">{message.agent}</div>
+                                  <div className={`rounded-lg p-2 text-sm ${
+                                    message.agent === 'User' 
+                                      ? 'bg-purple-600/20 border border-purple-500/30 text-purple-200'
+                                      : 'bg-slate-800/50 border border-slate-700/50 text-slate-300'
+                                  }`}>
+                                    {message.content}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                          <div ref={chatEndRef} />
+                            ))}
+                            {messages.filter(m => m.type === 'user_chat' || m.type === 'reasoning').length === 0 && (
+                              <div className="text-center py-8">
+                                <MessageSquare className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+                                <p className="text-slate-500 text-sm">Start a conversation with the AI assistant</p>
+                              </div>
+                            )}
+                            <div ref={chatEndRef} />
+                          </div>
+                        </div>
+                        
+                        <div className="text-xs text-slate-400">
+                          💡 Ask questions about your database project or get assistance with queries
                         </div>
                       </div>
                     </div>
@@ -1064,7 +1079,8 @@ Content for ${tabId} tab is being generated...`;
             </div>
 
             {/* Right Panel - Content */}
-            <div className="w-[70%] lg:w-[70%] md:w-[65%] sm:w-[60%] flex flex-col">
+            <div className="w-[70%] lg:w-[70%] md:w-[65%] sm:w-[60%] flex flex-col"
+                 style={{ height: 'calc(100vh - 80px)' }}>
               {/* Content Header */}
               <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
