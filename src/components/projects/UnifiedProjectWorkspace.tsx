@@ -841,36 +841,37 @@ Content for ${tabId} tab is being generated...`;
 
               {/* Content Based on Mode */}
               {mode.isLiveGeneration ? (
-                /* Agent Stream Content - Independent Chat Scroll */
-                <div className="flex-1 relative bg-slate-900/20 rounded-lg m-2 border border-slate-700/30">
-                  {/* Chat Header */}
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 border-b border-slate-700/50 p-2 z-20">
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <MessageSquare className="w-3 h-3 text-purple-400" />
-                      <span>Live Chat Stream</span>
-                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse ml-auto" />
+                /* Agent Stream Content - Fixed Height Chat Container */
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 relative bg-slate-900/20 rounded-lg m-2 border border-slate-700/30 min-h-0">
+                    {/* Chat Header */}
+                    <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 border-b border-slate-700/50 p-2 z-20 rounded-t-lg">
+                      <div className="flex items-center gap-2 text-xs text-slate-300">
+                        <MessageSquare className="w-3 h-3 text-purple-400" />
+                        <span>Live Chat Stream</span>
+                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse ml-auto" />
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Fade overlay at top */}
-                  <div className="absolute top-8 left-0 right-0 h-4 bg-gradient-to-b from-slate-900/50 to-transparent z-10 pointer-events-none"></div>
-                  
-                  {/* Scrollable content with fixed height */}
-                  <div 
-                    ref={messagesContainerRef}
-                    className="h-full overflow-y-auto scrollbar-elegant scroll-smooth pt-12 pb-2"
-                    onScroll={() => {
-                      if (!messagesContainerRef.current) return;
-                      
-                      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-                      // Check if scrolled to bottom
-                      const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
-                      
-                      if (isAtBottom && !isAutoScrollEnabled) {
-                        setIsAutoScrollEnabled(true);
-                      }
-                    }}
-                  >
+                    
+                    {/* Fade overlay at top */}
+                    <div className="absolute top-8 left-0 right-0 h-4 bg-gradient-to-b from-slate-900/50 to-transparent z-10 pointer-events-none"></div>
+                    
+                    {/* Scrollable content with constrained height */}
+                    <div 
+                      ref={messagesContainerRef}
+                      className="absolute inset-0 pt-12 pb-2 overflow-y-auto scrollbar-elegant scroll-smooth"
+                      onScroll={() => {
+                        if (!messagesContainerRef.current) return;
+                        
+                        const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+                        // Check if scrolled to bottom
+                        const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
+                        
+                        if (isAtBottom && !isAutoScrollEnabled) {
+                          setIsAutoScrollEnabled(true);
+                        }
+                      }}
+                    >
                     <div className="px-4 space-y-4">
                       {messages.map((message) => (
                         <div key={message.id} className="flex items-start gap-3 animate-in slide-in-from-bottom-1 duration-300">
@@ -926,21 +927,22 @@ Content for ${tabId} tab is being generated...`;
                       
                       <div ref={messagesEndRef} />
                     </div>
+                    </div>
+                    
+                    {/* Fade overlay at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-slate-900/50 to-transparent z-10 pointer-events-none rounded-b-lg"></div>
+                    
+                    {/* Scroll indicator when not at bottom */}
+                    {!isAutoScrollEnabled && (
+                      <button
+                        className="absolute bottom-4 right-4 z-20 p-2 bg-purple-600/80 hover:bg-purple-600 text-white rounded-full shadow-lg animate-bounce transition-all duration-200"
+                        onClick={scrollToBottom}
+                        aria-label="Scroll to bottom"
+                      >
+                        <ArrowLeft className="w-4 h-4 transform rotate-90" />
+                      </button>
+                    )}
                   </div>
-                  
-                  {/* Fade overlay at bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-slate-800/20 to-transparent z-10 pointer-events-none"></div>
-                  
-                  {/* Scroll indicator when not at bottom */}
-                  {!isAutoScrollEnabled && (
-                    <button
-                      className="absolute bottom-4 right-4 z-20 p-2 bg-purple-600/80 hover:bg-purple-600 text-white rounded-full shadow-lg animate-bounce transition-all duration-200"
-                      onClick={scrollToBottom}
-                      aria-label="Scroll to bottom"
-                    >
-                      <ArrowLeft className="w-4 h-4 transform rotate-90" />
-                    </button>
-                  )}
                 </div>
               ) : project && (
                 /* Project Dashboard Content */
