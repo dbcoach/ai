@@ -21,11 +21,11 @@ function AppContent() {
         <Route path="/projects" element={<DatabaseProjectsPage />} />
         <Route path="/projects/:projectId" element={<UnifiedProjectWorkspace />} />
         <Route path="/generate" element={<UnifiedProjectWorkspace />} />
-        <Route path="/streaming" element={<UnifiedProjectWorkspace />} />
+        <Route path="/streaming" element={<StreamingPage />} />
         <Route path="/streaming-canvas" element={<StreamingCanvasPage />} />
         <Route path="/conversations" element={<ConversationInterface />} />
         <Route path="/streaming-legacy" element={<LiveStreamingPage />} />
-        <Route path="/streaming-old" element={<StreamingPage />} />
+        <Route path="/unified-workspace" element={<UnifiedProjectWorkspace />} />
         <Route path="/settings/*" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

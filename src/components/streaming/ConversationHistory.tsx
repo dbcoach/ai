@@ -136,14 +136,26 @@ export function ConversationHistory({
       <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">Database Generations</h2>
-          <button
-            onClick={loadConversations}
-            disabled={loading}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50"
-            title="Refresh conversations"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                console.log('🔧 Debug: localStorage contents:', localStorage.getItem('dbcoach_conversations'));
+                console.log('🔧 Debug: All localStorage keys:', Object.keys(localStorage));
+              }}
+              className="p-2 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20 rounded-lg transition-colors text-xs"
+              title="Debug localStorage"
+            >
+              Debug
+            </button>
+            <button
+              onClick={loadConversations}
+              disabled={loading}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50"
+              title="Refresh conversations"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
         
         {/* Search */}
