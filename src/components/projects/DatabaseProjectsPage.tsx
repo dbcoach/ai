@@ -203,6 +203,7 @@ export function DatabaseProjectsPage() {
             projects={filteredProjects}
             loading={loading}
             onProjectSelect={handleProjectSelect}
+            onProjectDelete={handleProjectDeleted}
             searchTerm={searchTerm}
           />
         </div>

@@ -1,21 +1,28 @@
-import React from 'react';
-import { DatabaseProject } from '../../services/databaseProjectsService';
+import React, { useState } from 'react';
+import { DatabaseProject, databaseProjectsService } from '../../services/databaseProjectsService';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   Database,
   Calendar,
   Clock,
   FolderOpen,
-  MousePointer
+  MousePointer,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
 interface ProjectsListProps {
   projects: DatabaseProject[];
   loading: boolean;
   onProjectSelect: (project: DatabaseProject) => void;
+  onProjectDelete?: () => void;
   searchTerm: string;
 }
 
-export function ProjectsList({ projects, loading, onProjectSelect, searchTerm }: ProjectsListProps) {
+export function ProjectsList({ projects, loading, onProjectSelect, onProjectDelete, searchTerm }: ProjectsListProps) {
+  const { user } = useAuth();
+  const [deletingProject, setDeletingProject] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<DatabaseProject | null>(null);
   const getDbTypeIcon = (type: string) => {
     return <Database className="h-5 w-5 text-blue-400" />;
   };
@@ -47,6 +54,31 @@ export function ProjectsList({ projects, loading, onProjectSelect, searchTerm }:
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, project: DatabaseProject) => {
+    e.stopPropagation(); // Prevent project selection
+    setShowDeleteModal(project);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!showDeleteModal || !user) return;
+
+    try {
+      setDeletingProject(showDeleteModal.id);
+      await databaseProjectsService.deleteProject(showDeleteModal.id, user.id);
+      setShowDeleteModal(null);
+      onProjectDelete?.();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      // Could add toast notification here
+    } finally {
+      setDeletingProject(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(null);
   };
 
   if (loading) {
@@ -116,7 +148,19 @@ export function ProjectsList({ projects, loading, onProjectSelect, searchTerm }:
                 {project.database_type}
               </span>
             </div>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => handleDeleteClick(e, project)}
+                disabled={deletingProject === project.id}
+                className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                aria-label={`Delete ${project.database_name} project`}
+              >
+                {deletingProject === project.id ? (
+                  <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
               <MousePointer className="h-4 w-4 text-slate-500" />
             </div>
           </div>
@@ -154,6 +198,59 @@ export function ProjectsList({ projects, loading, onProjectSelect, searchTerm }:
           </div>
         </div>
       ))}
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-red-900/20 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Delete Project</h3>
+                <p className="text-sm text-slate-400">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-slate-300 mb-2">
+                Are you sure you want to delete <strong className="text-white">{showDeleteModal.database_name}</strong>?
+              </p>
+              <p className="text-sm text-slate-400">
+                This will permanently delete the project and all its sessions, queries, and associated data.
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={handleDeleteCancel}
+                disabled={deletingProject === showDeleteModal.id}
+                className="px-4 py-2 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deletingProject === showDeleteModal.id}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {deletingProject === showDeleteModal.id ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Project</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
