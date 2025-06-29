@@ -12,7 +12,8 @@
       "Bash(pkill:*)",
       "Bash(npm run typecheck:*)",
       "Bash(npm run:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

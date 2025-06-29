@@ -450,7 +450,11 @@ export class ConversationMigration {
   }
 }
 
-// Singleton instance - currently using localStorage
-// To switch to Supabase, import supabase client and use:
+// Singleton instance - switch between localStorage and Supabase
+import { supabase } from '../lib/supabase';
+
+// UNCOMMENT the line below after creating the conversations table in Supabase:
 // export const conversationStorage: ConversationStorage = new SupabaseConversations(supabase);
+
+// Comment out this line after switching to Supabase:
 export const conversationStorage: ConversationStorage = new LocalStorageConversations();
