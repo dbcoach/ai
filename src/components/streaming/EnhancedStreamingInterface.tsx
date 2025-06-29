@@ -13,10 +13,13 @@ import {
   Bot,
   Loader2,
   Save,
-  Database
+  Database,
+  Send,
+  MessageSquare
 } from 'lucide-react';
 import { StreamingErrorBoundary } from './StreamingErrorBoundary';
 import { conversationStorage, ConversationTitleGenerator, SavedConversation } from '../../services/conversationStorage';
+import { AIChatService } from '../../services/aiChatService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface StreamingTask {
@@ -36,6 +39,14 @@ interface StreamingSubtask {
   title: string;
   status: 'pending' | 'active' | 'completed' | 'error';
   progress: number;
+}
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  type?: 'text' | 'code' | 'sql';
 }
 
 interface EnhancedStreamingInterfaceProps {
@@ -73,10 +84,18 @@ export function EnhancedStreamingInterface({
   const [saveStatus, setSaveStatus] = useState<'none' | 'saving' | 'saved' | 'error'>('none');
   const [startTime] = useState(() => new Date());
   
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [showChat, setShowChat] = useState(true);
+  
   const contentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const cursorRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
   const insightsEndRef = useRef<HTMLDivElement>(null);
   const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize streaming session and capture
   useEffect(() => {
@@ -599,6 +618,92 @@ const api = {
     return colors[agent as keyof typeof colors] || 'from-slate-600 to-slate-700';
   };
 
+  // Chat functions
+  const handleSendChatMessage = async () => {
+    if (!chatInput.trim() || isChatLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      role: 'user',
+      content: chatInput.trim(),
+      timestamp: new Date(),
+      type: 'text'
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      // Create current conversation context for AI
+      const currentConversation: SavedConversation = {
+        id: sessionId,
+        prompt,
+        dbType,
+        title: ConversationTitleGenerator.generate(prompt, dbType),
+        generatedContent: Object.fromEntries(taskContent.entries()),
+        insights: insights.map(insight => ({
+          agent: insight.agent,
+          message: insight.message,
+          timestamp: insight.timestamp.toISOString()
+        })),
+        tasks: tasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          agent: task.agent,
+          status: task.status as 'completed',
+          progress: task.progress
+        })),
+        createdAt: startTime.toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'streaming',
+        userId: user?.id
+      };
+
+      const response = await AIChatService.generateResponse(currentConversation, chatInput.trim());
+      
+      const assistantMessage: ChatMessage = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        role: 'assistant',
+        content: response.content,
+        timestamp: new Date(),
+        type: response.type || 'text'
+      };
+
+      setChatMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error generating chat response:', error);
+      const errorMessage: ChatMessage = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        role: 'assistant',
+        content: 'Sorry, I encountered an error while processing your question. Please try again.',
+        timestamp: new Date(),
+        type: 'text'
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const formatChatMessage = (content: string, type?: string) => {
+    if (type === 'code' || type === 'sql') {
+      return (
+        <pre className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 overflow-x-auto">
+          <code className="text-sm font-mono text-green-300">{content}</code>
+        </pre>
+      );
+    }
+    return <div className="whitespace-pre-wrap">{content}</div>;
+  };
+
+  // Auto-scroll chat messages to bottom
+  useEffect(() => {
+    if (chatMessagesEndRef.current) {
+      chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
+
   return (
     <StreamingErrorBoundary>
       <div className={`h-full bg-slate-900/20 rounded-xl border border-slate-700/50 overflow-hidden ${className}`}>
@@ -617,6 +722,20 @@ const api = {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Chat Toggle Button */}
+            <button
+              onClick={() => setShowChat(!showChat)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                showChat 
+                  ? 'bg-purple-600/20 text-purple-300 border border-purple-500/50' 
+                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 hover:text-slate-300'
+              }`}
+              title={showChat ? 'Hide Chat' : 'Show Chat'}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span className="text-sm font-medium">Chat</span>
+            </button>
+            
             {/* Save Status Indicator */}
             <div className="flex items-center gap-2">
               {saveStatus === 'saving' && (
@@ -656,7 +775,7 @@ const api = {
 
         <div className="flex h-full">
           {/* Left Side: AI Agent Reasoning Stream */}
-          <div className="w-1/2 border-r border-slate-700/50 bg-slate-800/20 flex flex-col overflow-hidden">
+          <div className={`${showChat ? 'w-1/3' : 'w-1/2'} border-r border-slate-700/50 bg-slate-800/20 flex flex-col overflow-hidden transition-all duration-300`}>
             <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Bot className="w-5 h-5 text-purple-400" />
@@ -745,8 +864,8 @@ const api = {
             </div>
           </div>
 
-          {/* Right Side: Generated Results */}
-          <div className="w-1/2 flex flex-col overflow-hidden">
+          {/* Middle: Generated Results */}
+          <div className={`${showChat ? 'w-1/3' : 'w-1/2'} ${showChat ? 'border-r border-slate-700/50' : ''} flex flex-col overflow-hidden transition-all duration-300`}>
             <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Database className="w-5 h-5 text-green-400" />
@@ -877,6 +996,132 @@ const api = {
               </div>
             </div>
           </div>
+
+          {/* Right Side: Chat Panel */}
+          {showChat && (
+            <div className="w-1/3 bg-slate-800/10 flex flex-col overflow-hidden">
+              <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-blue-400" />
+                  AI Assistant
+                </h3>
+                <p className="text-sm text-slate-400 mt-1">Ask questions about your database design</p>
+              </div>
+
+              {/* Chat Messages */}
+              <div className="flex-1 p-4 overflow-y-auto">
+                <div className="space-y-4">
+                  {chatMessages.length === 0 ? (
+                    <div className="text-center text-slate-500 py-8">
+                      <MessageSquare className="w-12 h-12 mx-auto mb-4 text-slate-600" />
+                      <p className="text-sm mb-2">Start a conversation!</p>
+                      <p className="text-xs text-slate-600">Ask me about the database design, schema, or implementation.</p>
+                      <div className="mt-4 space-y-2">
+                        <button
+                          onClick={() => setChatInput("Explain the database schema design")}
+                          className="block w-full text-left px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 rounded-lg text-sm transition-colors"
+                        >
+                          💡 Explain the database schema design
+                        </button>
+                        <button
+                          onClick={() => setChatInput("What are the key relationships in this database?")}
+                          className="block w-full text-left px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 rounded-lg text-sm transition-colors"
+                        >
+                          🔗 What are the key relationships?
+                        </button>
+                        <button
+                          onClick={() => setChatInput("How can I optimize this database for performance?")}
+                          className="block w-full text-left px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 rounded-lg text-sm transition-colors"
+                        >
+                          ⚡ How to optimize for performance?
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {chatMessages.map((message) => (
+                        <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-lg p-3 ${
+                            message.role === 'user' 
+                              ? 'bg-purple-600/20 text-purple-100 border border-purple-500/30' 
+                              : 'bg-slate-800/50 text-slate-200 border border-slate-700/50'
+                          }`}>
+                            <div className="flex items-center gap-2 mb-1">
+                              {message.role === 'user' ? (
+                                <User className="w-4 h-4 text-purple-300" />
+                              ) : (
+                                <Bot className="w-4 h-4 text-blue-400" />
+                              )}
+                              <span className="text-xs text-slate-400">
+                                {message.timestamp.toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <div className="text-sm">
+                              {formatChatMessage(message.content, message.type)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Typing Indicator */}
+                      {isChatLoading && (
+                        <div className="flex justify-start">
+                          <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 max-w-[80%]">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Bot className="w-4 h-4 text-blue-400" />
+                              <span className="text-xs text-slate-400">AI Assistant</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex gap-1">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                              </div>
+                              <span className="text-xs text-slate-400">Thinking...</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div ref={chatMessagesEndRef} />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Chat Input */}
+              <div className="border-t border-slate-700/50 bg-slate-800/30 p-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={chatInputRef}
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendChatMessage();
+                      }
+                    }}
+                    placeholder="Ask about the database design..."
+                    disabled={isChatLoading}
+                    className="flex-1 px-4 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleSendChatMessage}
+                    disabled={!chatInput.trim() || isChatLoading}
+                    className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg transition-all duration-200 disabled:opacity-50"
+                  >
+                    {isChatLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">Press Enter to send, Shift+Enter for new line</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </StreamingErrorBoundary>
