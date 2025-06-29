@@ -238,5 +238,219 @@ export class ConversationTitleGenerator {
   }
 }
 
-// Singleton instance
+/**
+ * Supabase implementation of conversation storage
+ */
+export class SupabaseConversations implements ConversationStorage {
+  private supabase: any;
+
+  constructor(supabaseClient: any) {
+    this.supabase = supabaseClient;
+  }
+
+  async saveConversation(conversation: SavedConversation): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('conversations')
+        .upsert({
+          id: conversation.id,
+          user_id: conversation.userId,
+          prompt: conversation.prompt,
+          db_type: conversation.dbType,
+          title: conversation.title,
+          generated_content: conversation.generatedContent,
+          insights: conversation.insights,
+          tasks: conversation.tasks,
+          status: conversation.status,
+          metadata: conversation.metadata,
+          created_at: conversation.createdAt,
+          updated_at: conversation.updatedAt
+        });
+
+      if (error) throw error;
+      console.log(`✅ Saved conversation to Supabase: "${conversation.title}"`);
+    } catch (error) {
+      console.error('❌ Error saving conversation to Supabase:', error);
+      throw new Error('Failed to save conversation to database');
+    }
+  }
+
+  async loadConversations(userId?: string): Promise<SavedConversation[]> {
+    try {
+      let query = this.supabase
+        .from('conversations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return data.map((row: any) => ({
+        id: row.id,
+        prompt: row.prompt,
+        dbType: row.db_type,
+        title: row.title,
+        generatedContent: row.generated_content,
+        insights: row.insights,
+        tasks: row.tasks,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        status: row.status,
+        userId: row.user_id,
+        metadata: row.metadata
+      }));
+    } catch (error) {
+      console.error('❌ Error loading conversations from Supabase:', error);
+      return [];
+    }
+  }
+
+  async getConversation(id: string): Promise<SavedConversation | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('conversations')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      if (!data) return null;
+
+      return {
+        id: data.id,
+        prompt: data.prompt,
+        dbType: data.db_type,
+        title: data.title,
+        generatedContent: data.generated_content,
+        insights: data.insights,
+        tasks: data.tasks,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        status: data.status,
+        userId: data.user_id,
+        metadata: data.metadata
+      };
+    } catch (error) {
+      console.error('❌ Error getting conversation from Supabase:', error);
+      return null;
+    }
+  }
+
+  async deleteConversation(id: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('conversations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      console.log(`🗑️ Deleted conversation: ${id}`);
+    } catch (error) {
+      console.error('❌ Error deleting conversation from Supabase:', error);
+      throw new Error('Failed to delete conversation');
+    }
+  }
+
+  async updateConversation(id: string, updates: Partial<SavedConversation>): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('conversations')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      console.log(`✏️ Updated conversation: ${id}`);
+    } catch (error) {
+      console.error('❌ Error updating conversation in Supabase:', error);
+      throw new Error('Failed to update conversation');
+    }
+  }
+
+  async searchConversations(query: string, userId?: string): Promise<SavedConversation[]> {
+    try {
+      let supabaseQuery = this.supabase
+        .from('conversations')
+        .select('*')
+        .or(`title.ilike.%${query}%,prompt.ilike.%${query}%,db_type.ilike.%${query}%`)
+        .order('created_at', { ascending: false });
+
+      if (userId) {
+        supabaseQuery = supabaseQuery.eq('user_id', userId);
+      }
+
+      const { data, error } = await supabaseQuery;
+      if (error) throw error;
+
+      return data.map((row: any) => ({
+        id: row.id,
+        prompt: row.prompt,
+        dbType: row.db_type,
+        title: row.title,
+        generatedContent: row.generated_content,
+        insights: row.insights,
+        tasks: row.tasks,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        status: row.status,
+        userId: row.user_id,
+        metadata: row.metadata
+      }));
+    } catch (error) {
+      console.error('❌ Error searching conversations in Supabase:', error);
+      return [];
+    }
+  }
+}
+
+/**
+ * Migration utility to transfer localStorage data to Supabase
+ */
+export class ConversationMigration {
+  static async migrateLocalStorageToSupabase(
+    supabaseStorage: SupabaseConversations,
+    localStorageStorage: LocalStorageConversations
+  ): Promise<{ migrated: number; errors: string[] }> {
+    const results = { migrated: 0, errors: [] as string[] };
+    
+    try {
+      console.log('🔄 Starting migration from localStorage to Supabase...');
+      
+      // Get all conversations from localStorage
+      const localConversations = await localStorageStorage.loadConversations();
+      console.log(`📦 Found ${localConversations.length} conversations in localStorage`);
+      
+      // Migrate each conversation
+      for (const conversation of localConversations) {
+        try {
+          await supabaseStorage.saveConversation(conversation);
+          results.migrated++;
+          console.log(`✅ Migrated: "${conversation.title}"`);
+        } catch (error) {
+          const errorMsg = `Failed to migrate "${conversation.title}": ${error}`;
+          results.errors.push(errorMsg);
+          console.error(`❌ ${errorMsg}`);
+        }
+      }
+      
+      console.log(`🎉 Migration complete: ${results.migrated}/${localConversations.length} conversations migrated`);
+      
+    } catch (error) {
+      results.errors.push(`Migration failed: ${error}`);
+      console.error('❌ Migration failed:', error);
+    }
+    
+    return results;
+  }
+}
+
+// Singleton instance - currently using localStorage
+// To switch to Supabase, import supabase client and use:
+// export const conversationStorage: ConversationStorage = new SupabaseConversations(supabase);
 export const conversationStorage: ConversationStorage = new LocalStorageConversations();
