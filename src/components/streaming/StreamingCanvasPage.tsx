@@ -32,6 +32,8 @@ export function StreamingCanvasPage() {
   const [sessionQueries, setSessionQueries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [allProjects, setAllProjects] = useState<DatabaseProject[]>([]);
+  const [showAllProjects, setShowAllProjects] = useState(false);
 
   // New streaming parameters
   const [newPrompt, setNewPrompt] = useState('');
@@ -50,14 +52,30 @@ export function StreamingCanvasPage() {
       setLoading(true);
       const projects = await databaseProjectsService.getProjects(user.id);
       
-      // Filter projects that have streaming results
-      const streamingProjects = projects.filter(project => 
-        project.metadata && 
-        project.metadata.generation_mode && 
-        project.metadata.streaming_results
-      );
+      console.log('All projects:', projects);
       
+      // Filter projects that have streaming results - make it more flexible
+      const streamingProjects = projects.filter(project => {
+        const hasStreamingMetadata = project.metadata && 
+          (project.metadata.generation_mode || project.metadata.streaming_results);
+        
+        // Also check if project has sessions with streaming-like queries
+        const hasStreamingInName = project.database_name?.includes('(') || 
+          project.description?.toLowerCase().includes('streaming') ||
+          project.description?.toLowerCase().includes('generation');
+          
+        console.log(`Project ${project.database_name}:`, {
+          hasStreamingMetadata,
+          hasStreamingInName,
+          metadata: project.metadata
+        });
+        
+        return hasStreamingMetadata || hasStreamingInName;
+      });
+      
+      console.log('Filtered streaming projects:', streamingProjects);
       setStreamingProjects(streamingProjects);
+      setAllProjects(projects);
     } catch (error) {
       console.error('Error loading streaming projects:', error);
     } finally {
@@ -125,7 +143,8 @@ export function StreamingCanvasPage() {
     console.log(`Exporting in ${format} format`);
   };
 
-  const filteredProjects = streamingProjects.filter(project =>
+  const projectsToShow = showAllProjects ? allProjects : streamingProjects;
+  const filteredProjects = projectsToShow.filter(project =>
     project.database_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -280,20 +299,33 @@ export function StreamingCanvasPage() {
                 {/* Sidebar */}
                 <div className="w-80 border-r border-slate-700/50 bg-slate-800/20 overflow-y-auto">
                   <div className="p-4 border-b border-slate-700/50">
-                    <div className="relative">
+                    <div className="relative mb-3">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Search streaming projects..."
+                        placeholder="Search projects..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                       />
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-400">
+                        {showAllProjects ? `${allProjects.length} total` : `${streamingProjects.length} streaming`} projects
+                      </span>
+                      <button
+                        onClick={() => setShowAllProjects(!showAllProjects)}
+                        className="text-xs text-purple-400 hover:text-purple-300"
+                      >
+                        {showAllProjects ? 'Show Streaming Only' : 'Show All Projects'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="p-4">
-                    <h3 className="text-sm font-medium text-slate-300 mb-3">Streaming Projects</h3>
+                    <h3 className="text-sm font-medium text-slate-300 mb-3">
+                      {showAllProjects ? 'All Projects' : 'Streaming Projects'}
+                    </h3>
                     
                     {loading ? (
                       <div className="space-y-3">
@@ -307,13 +339,25 @@ export function StreamingCanvasPage() {
                     ) : filteredProjects.length === 0 ? (
                       <div className="text-center py-8">
                         <Database className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-                        <p className="text-slate-500 text-sm">No streaming projects found</p>
-                        <button
-                          onClick={() => setViewMode('new')}
-                          className="mt-2 text-purple-400 hover:text-purple-300 text-sm"
-                        >
-                          Create your first one
-                        </button>
+                        <p className="text-slate-500 text-sm">
+                          {streamingProjects.length === 0 
+                            ? "No streaming projects found" 
+                            : "No projects match your search"
+                          }
+                        </p>
+                        {streamingProjects.length === 0 && (
+                          <>
+                            <p className="text-slate-600 text-xs mt-2">
+                              Create streaming projects by using the live generation feature
+                            </p>
+                            <button
+                              onClick={() => setViewMode('new')}
+                              className="mt-2 text-purple-400 hover:text-purple-300 text-sm"
+                            >
+                              Create your first one
+                            </button>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-2">
