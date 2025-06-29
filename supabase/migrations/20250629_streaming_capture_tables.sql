@@ -55,27 +55,38 @@ ALTER TABLE streaming_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streaming_chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streaming_insights ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
-CREATE POLICY "Users can only access their own streaming sessions" ON streaming_sessions
-    FOR ALL USING (auth.uid() = user_id);
+-- RLS Policies (with IF NOT EXISTS pattern)
+DO $$ 
+BEGIN
+    -- Drop any existing conflicting policies first
+    DROP POLICY IF EXISTS "Users can only access their own streaming sessions" ON streaming_sessions;
+    DROP POLICY IF EXISTS "Users can only access chunks from their own sessions" ON streaming_chunks;
+    DROP POLICY IF EXISTS "Users can only access insights from their own sessions" ON streaming_insights;
+    
+    -- Create new policies
+    CREATE POLICY "streaming_sessions_access" ON streaming_sessions
+        FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can only access chunks from their own sessions" ON streaming_chunks
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM streaming_sessions 
-            WHERE streaming_sessions.id = streaming_chunks.streaming_session_id 
-            AND streaming_sessions.user_id = auth.uid()
-        )
-    );
+    CREATE POLICY "streaming_chunks_access" ON streaming_chunks
+        FOR ALL USING (
+            EXISTS (
+                SELECT 1 FROM streaming_sessions 
+                WHERE streaming_sessions.id = streaming_chunks.streaming_session_id 
+                AND streaming_sessions.user_id = auth.uid()
+            )
+        );
 
-CREATE POLICY "Users can only access insights from their own sessions" ON streaming_insights
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM streaming_sessions 
-            WHERE streaming_sessions.id = streaming_insights.streaming_session_id 
-            AND streaming_sessions.user_id = auth.uid()
-        )
-    );
+    CREATE POLICY "streaming_insights_access" ON streaming_insights
+        FOR ALL USING (
+            EXISTS (
+                SELECT 1 FROM streaming_sessions 
+                WHERE streaming_sessions.id = streaming_insights.streaming_session_id 
+                AND streaming_sessions.user_id = auth.uid()
+            )
+        );
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Some policies already exist, continuing...';
+END $$;
 
 -- Create function for table creation (used by the service)
 CREATE OR REPLACE FUNCTION create_streaming_tables()

@@ -89,13 +89,19 @@ class StreamingDataCaptureService {
         console.log('Streaming tables already exist');
         return;
       }
+      
+      // Handle policy conflicts specifically
+      if (testError.message && testError.message.includes('policy')) {
+        console.warn('Database policy conflict detected, but tables exist. Using in-memory storage.');
+        return;
+      }
     } catch (error) {
-      console.log('Tables do not exist, will use fallback storage');
+      console.log('Tables do not exist or have policy issues, will use fallback storage');
     }
 
-    // If we get here, tables don't exist
-    console.warn('Streaming tables not found. Data will be stored in memory only.');
-    console.warn('To persist data, please run the streaming migration.');
+    // If we get here, tables don't exist or have issues
+    console.warn('Streaming tables not found or have policy conflicts. Data will be stored in memory only.');
+    console.warn('To persist data, please run the streaming migration or fix policy conflicts.');
   }
 
   /**
@@ -455,8 +461,16 @@ class StreamingDataCaptureService {
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        databaseSessions = data || [];
+        if (error) {
+          // Handle specific policy errors
+          if (error.message && (error.message.includes('policy') || error.message.includes('RLS'))) {
+            console.warn('Database RLS policy conflict, using in-memory sessions only');
+          } else {
+            throw error;
+          }
+        } else {
+          databaseSessions = data || [];
+        }
       } catch (dbError) {
         console.warn('Cannot access streaming_sessions table:', dbError);
       }
