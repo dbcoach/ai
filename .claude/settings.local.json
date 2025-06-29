@@ -9,7 +9,10 @@
       "Bash(npx supabase migration:*)",
       "Bash(npx supabase:*)",
       "Bash(npm run dev:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

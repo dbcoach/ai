@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Zap, ArrowRight, Bot, Sparkles, Settings } from 'lucide-react';
+import { Database, Zap, ArrowRight, Bot, Sparkles, Settings, MessageSquare } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DBCoachMode } from '../context/GenerationContext';
 import AuthButton from './auth/AuthButton';
@@ -86,11 +86,11 @@ const LandingPage: React.FC = () => {
           {user && (
             <>
               <Link 
-                to="/streaming-canvas" 
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 hover:from-purple-600/30 hover:to-blue-600/30 text-purple-300 hover:text-purple-200 rounded-lg transition-colors backdrop-blur-sm border border-purple-500/30"
+                to="/conversations" 
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 text-green-300 hover:text-green-200 rounded-lg transition-colors backdrop-blur-sm border border-green-500/30"
               >
-                <Zap className="w-4 h-4" />
-                <span>Streaming Canvas</span>
+                <MessageSquare className="w-4 h-4" />
+                <span>Generations</span>
               </Link>
               <Link 
                 to="/projects" 
