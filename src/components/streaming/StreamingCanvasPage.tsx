@@ -11,29 +11,28 @@ import {
   Filter,
   ArrowRight,
   Clock,
-  Calendar
+  Calendar,
+  History,
+  MessageSquare
 } from 'lucide-react';
-import { StreamingInterface } from './StreamingInterface';
-import { StreamingResultsViewer } from './StreamingResultsViewer';
+import { EnhancedStreamingInterface } from './EnhancedStreamingInterface';
+import { SavedStreamingCanvas } from './SavedStreamingCanvas';
 import { ChatInterface } from './ChatInterface';
 import { useAuth } from '../../contexts/AuthContext';
 import { DatabaseProject, DatabaseSession, databaseProjectsService } from '../../services/databaseProjectsService';
+import { streamingDataCapture, StreamingData } from '../../services/streamingDataCapture';
 import ProtectedRoute from '../auth/ProtectedRoute';
 
-type ViewMode = 'new' | 'results' | 'chat';
+type ViewMode = 'new' | 'new-streaming' | 'results' | 'chat';
 
 export function StreamingCanvasPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('new');
-  const [streamingProjects, setStreamingProjects] = useState<DatabaseProject[]>([]);
-  const [selectedProject, setSelectedProject] = useState<DatabaseProject | null>(null);
-  const [selectedSession, setSelectedSession] = useState<DatabaseSession | null>(null);
-  const [sessionQueries, setSessionQueries] = useState<any[]>([]);
+  const [streamingSessions, setStreamingSessions] = useState<StreamingData[]>([]);
+  const [selectedSession, setSelectedSession] = useState<StreamingData | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [allProjects, setAllProjects] = useState<DatabaseProject[]>([]);
-  const [showAllProjects, setShowAllProjects] = useState(false);
 
   // New streaming parameters
   const [newPrompt, setNewPrompt] = useState('');
@@ -41,101 +40,45 @@ export function StreamingCanvasPage() {
 
   useEffect(() => {
     if (user) {
-      loadStreamingProjects();
+      loadStreamingSessions();
     }
   }, [user]);
 
-  const loadStreamingProjects = async () => {
+  const loadStreamingSessions = async () => {
     if (!user) return;
     
     try {
       setLoading(true);
-      const projects = await databaseProjectsService.getProjects(user.id);
+      await streamingDataCapture.initialize();
+      const sessions = await streamingDataCapture.getSavedSessions(user.id);
       
-      console.log('All projects:', projects);
-      
-      // Filter projects that have streaming results - make it more flexible
-      const streamingProjects = projects.filter(project => {
-        const hasStreamingMetadata = project.metadata && 
-          (project.metadata.generation_mode || project.metadata.streaming_results);
-        
-        // Also check if project has sessions with streaming-like queries
-        const hasStreamingInName = project.database_name?.includes('(') || 
-          project.description?.toLowerCase().includes('streaming') ||
-          project.description?.toLowerCase().includes('generation');
-          
-        console.log(`Project ${project.database_name}:`, {
-          hasStreamingMetadata,
-          hasStreamingInName,
-          metadata: project.metadata
-        });
-        
-        return hasStreamingMetadata || hasStreamingInName;
-      });
-      
-      console.log('Filtered streaming projects:', streamingProjects);
-      setStreamingProjects(streamingProjects);
-      setAllProjects(projects);
+      console.log('Loaded streaming sessions:', sessions);
+      setStreamingSessions(sessions);
     } catch (error) {
-      console.error('Error loading streaming projects:', error);
+      console.error('Error loading streaming sessions:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadSessionQueries = async (sessionId: string) => {
-    try {
-      const queries = await databaseProjectsService.getSessionQueries(sessionId);
-      setSessionQueries(queries);
-    } catch (error) {
-      console.error('Error loading session queries:', error);
-    }
-  };
-
-  const handleProjectSelect = async (project: DatabaseProject) => {
-    setSelectedProject(project);
-    
-    // Load sessions for this project
-    try {
-      const sessions = await databaseProjectsService.getProjectSessions(project.id);
-      if (sessions.length > 0) {
-        const latestSession = sessions[0]; // Most recent session
-        setSelectedSession(latestSession);
-        await loadSessionQueries(latestSession.id);
-      }
-    } catch (error) {
-      console.error('Error loading project sessions:', error);
-    }
+  const handleSessionSelect = (session: StreamingData) => {
+    setSelectedSession(session);
   };
 
   const handleStartNewStreaming = () => {
     if (!newPrompt.trim()) return;
-    
-    const searchParams = new URLSearchParams({
-      prompt: newPrompt,
-      dbType: newDbType,
-      mode: 'dbcoach'
-    });
-    
-    navigate(`/streaming?${searchParams.toString()}`);
+    setViewMode('new-streaming'); // Switch to streaming view
   };
 
-  const handleStreamingComplete = (results: any) => {
-    // Refresh projects list to show newly created project
-    loadStreamingProjects();
+  const handleStreamingComplete = (projectId: string) => {
+    // Refresh sessions list to show newly created session
+    loadStreamingSessions();
     setViewMode('results');
   };
 
   const handleNewGeneration = (prompt: string) => {
-    const searchParams = new URLSearchParams({
-      prompt,
-      dbType: selectedProject?.database_type || 'PostgreSQL',
-      mode: 'continue',
-      projectId: selectedProject?.id || '',
-      sessionId: selectedSession?.id || ''
-    });
-    
-    navigate(`/streaming?${searchParams.toString()}`);
+    setNewPrompt(prompt);
+    setViewMode('new-streaming');
   };
 
   const handleExport = (format: 'json' | 'csv' | 'pdf') => {
@@ -143,10 +86,9 @@ export function StreamingCanvasPage() {
     console.log(`Exporting in ${format} format`);
   };
 
-  const projectsToShow = showAllProjects ? allProjects : streamingProjects;
-  const filteredProjects = projectsToShow.filter(project =>
-    project.database_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSessions = streamingSessions.filter(session =>
+    session.prompt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    session.database_type?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatDate = (dateString: string) => {
@@ -238,6 +180,18 @@ export function StreamingCanvasPage() {
 
           {/* Content Area */}
           <div className="flex-1 overflow-hidden">
+            {viewMode === 'new-streaming' && (
+              <div className="h-full p-6">
+                <EnhancedStreamingInterface
+                  prompt={newPrompt}
+                  dbType={newDbType}
+                  onComplete={handleStreamingComplete}
+                  onError={(error) => console.error('Streaming error:', error)}
+                  className="h-full"
+                />
+              </div>
+            )}
+
             {viewMode === 'new' && (
               <div className="h-full flex items-center justify-center p-6">
                 <div className="max-w-2xl w-full">
@@ -303,7 +257,7 @@ export function StreamingCanvasPage() {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Search projects..."
+                        placeholder="Search streaming sessions..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
@@ -311,20 +265,14 @@ export function StreamingCanvasPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-slate-400">
-                        {showAllProjects ? `${allProjects.length} total` : `${streamingProjects.length} streaming`} projects
+                        {streamingSessions.length} streaming sessions
                       </span>
-                      <button
-                        onClick={() => setShowAllProjects(!showAllProjects)}
-                        className="text-xs text-purple-400 hover:text-purple-300"
-                      >
-                        {showAllProjects ? 'Show Streaming Only' : 'Show All Projects'}
-                      </button>
                     </div>
                   </div>
 
                   <div className="p-4">
                     <h3 className="text-sm font-medium text-slate-300 mb-3">
-                      {showAllProjects ? 'All Projects' : 'Streaming Projects'}
+                      Streaming Sessions
                     </h3>
                     
                     {loading ? (
@@ -336,19 +284,19 @@ export function StreamingCanvasPage() {
                           </div>
                         ))}
                       </div>
-                    ) : filteredProjects.length === 0 ? (
+                    ) : filteredSessions.length === 0 ? (
                       <div className="text-center py-8">
                         <Database className="w-12 h-12 text-slate-500 mx-auto mb-3" />
                         <p className="text-slate-500 text-sm">
-                          {streamingProjects.length === 0 
-                            ? "No streaming projects found" 
-                            : "No projects match your search"
+                          {streamingSessions.length === 0 
+                            ? "No streaming sessions found" 
+                            : "No sessions match your search"
                           }
                         </p>
-                        {streamingProjects.length === 0 && (
+                        {streamingSessions.length === 0 && (
                           <>
                             <p className="text-slate-600 text-xs mt-2">
-                              Create streaming projects by using the live generation feature
+                              Create streaming sessions by using the live generation feature
                             </p>
                             <button
                               onClick={() => setViewMode('new')}
@@ -361,30 +309,34 @@ export function StreamingCanvasPage() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {filteredProjects.map((project) => (
+                        {filteredSessions.map((session) => (
                           <button
-                            key={project.id}
-                            onClick={() => handleProjectSelect(project)}
+                            key={session.id}
+                            onClick={() => handleSessionSelect(session)}
                             className={`w-full text-left p-3 rounded-lg transition-colors ${
-                              selectedProject?.id === project.id
+                              selectedSession?.id === session.id
                                 ? 'bg-purple-600/20 border border-purple-500/30'
                                 : 'bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/50'
                             }`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <span className="font-medium text-white text-sm truncate">
-                                {project.database_name}
+                                {session.database_type} Session
                               </span>
-                              <span className="text-xs text-slate-500">
-                                {project.database_type}
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                session.status === 'completed' ? 'bg-green-600/20 text-green-300' :
+                                session.status === 'error' ? 'bg-red-600/20 text-red-300' :
+                                'bg-yellow-600/20 text-yellow-300'
+                              }`}>
+                                {session.status}
                               </span>
                             </div>
                             <p className="text-xs text-slate-400 line-clamp-2 mb-2">
-                              {project.description}
+                              {session.prompt}
                             </p>
                             <div className="flex items-center text-xs text-slate-500">
                               <Clock className="w-3 h-3 mr-1" />
-                              {formatDate(project.last_accessed)}
+                              {formatDate(session.created_at)}
                             </div>
                           </button>
                         ))}
@@ -395,20 +347,19 @@ export function StreamingCanvasPage() {
 
                 {/* Main Content */}
                 <div className="flex-1 overflow-hidden">
-                  {selectedProject && selectedSession ? (
-                    <StreamingResultsViewer
-                      project={selectedProject}
-                      session={selectedSession}
-                      queries={sessionQueries}
-                      onStartNewChat={() => setViewMode('chat')}
+                  {selectedSession ? (
+                    <SavedStreamingCanvas
+                      sessionId={selectedSession.id}
+                      onStartNewChat={(prompt) => handleNewGeneration(prompt)}
                       onExport={handleExport}
+                      className="h-full"
                     />
                   ) : (
                     <div className="h-full flex items-center justify-center">
                       <div className="text-center">
                         <Database className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-slate-300 mb-2">Select a Project</h3>
-                        <p className="text-slate-500">Choose a streaming project from the sidebar to view its results</p>
+                        <h3 className="text-xl font-semibold text-slate-300 mb-2">Select a Session</h3>
+                        <p className="text-slate-500">Choose a streaming session from the sidebar to view its canvas</p>
                       </div>
                     </div>
                   )}
@@ -418,19 +369,45 @@ export function StreamingCanvasPage() {
 
             {viewMode === 'chat' && (
               <div className="h-full p-6">
-                {selectedProject && selectedSession ? (
-                  <ChatInterface
-                    project={selectedProject}
-                    session={selectedSession}
-                    onNewGeneration={handleNewGeneration}
-                    onExport={(messages) => console.log('Exporting chat:', messages)}
-                  />
+                {selectedSession ? (
+                  <div className="h-full">
+                    <div className="mb-4 p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                      <h3 className="text-lg font-semibold text-white mb-2">Continue Conversation</h3>
+                      <p className="text-slate-400 text-sm">
+                        Database Type: {selectedSession.database_type} | 
+                        Status: <span className={`ml-1 ${
+                          selectedSession.status === 'completed' ? 'text-green-300' :
+                          selectedSession.status === 'error' ? 'text-red-300' :
+                          'text-yellow-300'
+                        }`}>{selectedSession.status}</span>
+                      </p>
+                      <p className="text-slate-500 text-sm mt-1">
+                        Original prompt: "{selectedSession.prompt}"
+                      </p>
+                    </div>
+                    
+                    <div className="h-full bg-slate-800/30 rounded-lg border border-slate-700/50 p-4">
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <MessageSquare className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                          <h3 className="text-xl font-semibold text-white mb-2">Chat Interface</h3>
+                          <p className="text-slate-400 mb-4">Continue working on your database design</p>
+                          <button
+                            onClick={() => handleNewGeneration(selectedSession.prompt)}
+                            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
+                          >
+                            Start New Generation
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
                       <History className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-slate-300 mb-2">Select a Project</h3>
-                      <p className="text-slate-500 mb-4">Choose a project from the Results tab to continue the conversation</p>
+                      <h3 className="text-xl font-semibold text-slate-300 mb-2">Select a Session</h3>
+                      <p className="text-slate-500 mb-4">Choose a session from the Results tab to continue the conversation</p>
                       <button
                         onClick={() => setViewMode('results')}
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
