@@ -660,6 +660,18 @@ const api = {
         userId: user?.id
       };
 
+      // Debug: Log the context being sent to AI
+      console.log('🤖 Chat AI Context:', {
+        prompt: currentConversation.prompt,
+        dbType: currentConversation.dbType,
+        generatedContentKeys: Object.keys(currentConversation.generatedContent),
+        contentSizes: Object.entries(currentConversation.generatedContent).map(([key, content]) => 
+          ({ task: key, contentLength: content.length })),
+        insightsCount: currentConversation.insights.length,
+        tasksCount: currentConversation.tasks.length,
+        userQuestion: chatInput.trim()
+      });
+
       const response = await AIChatService.generateResponse(currentConversation, chatInput.trim());
       
       const assistantMessage: ChatMessage = {
@@ -999,7 +1011,7 @@ const api = {
 
           {/* Right Side: Chat Panel */}
           {showChat && (
-            <div className="w-1/3 bg-slate-800/10 flex flex-col overflow-hidden">
+            <div className="w-1/3 bg-slate-800/10 flex flex-col overflow-hidden min-h-0">
               <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-blue-400" />
@@ -1009,7 +1021,7 @@ const api = {
               </div>
 
               {/* Chat Messages */}
-              <div className="flex-1 p-4 overflow-y-auto">
+              <div className="flex-1 p-4 overflow-y-auto min-h-0">
                 <div className="space-y-4">
                   {chatMessages.length === 0 ? (
                     <div className="text-center text-slate-500 py-8">
@@ -1089,7 +1101,7 @@ const api = {
               </div>
 
               {/* Chat Input */}
-              <div className="border-t border-slate-700/50 bg-slate-800/30 p-4">
+              <div className="border-t border-slate-700/50 bg-slate-800/30 p-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <input
                     ref={chatInputRef}
@@ -1104,7 +1116,7 @@ const api = {
                     }}
                     placeholder="Ask about the database design..."
                     disabled={isChatLoading}
-                    className="flex-1 px-4 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                    className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0"
                   />
                   <button
                     onClick={handleSendChatMessage}

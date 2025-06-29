@@ -12,8 +12,13 @@ export class AIChatService {
    */
   static async generateResponse(conversation: SavedConversation, userQuestion: string): Promise<ChatResponse> {
     try {
+      console.log('🧠 AIChatService processing question:', userQuestion);
+      console.log('📊 Available content keys:', Object.keys(conversation.generatedContent));
+      console.log('📋 Available tasks:', conversation.tasks.map(t => `${t.title} (${t.status})`));
+      
       // Analyze the question to determine the type of response needed
       const questionType = this.categorizeQuestion(userQuestion);
+      console.log('🎯 Question categorized as:', questionType);
       
       // Extract relevant context from the conversation
       const context = this.extractRelevantContext(conversation, questionType);
@@ -21,6 +26,7 @@ export class AIChatService {
       // Generate response based on question type and context
       const response = await this.generateContextualResponse(userQuestion, questionType, context);
       
+      console.log('✅ Generated response type:', response.type, 'length:', response.content.length);
       return response;
     } catch (error) {
       console.error('Error generating AI chat response:', error);
@@ -519,6 +525,52 @@ Need help with any specific implementation step?`;
   }
 
   private static generateGeneralResponse(question: string, context: any): ChatResponse {
+    // Check if user is asking about context or testing
+    const lowerQuestion = question.toLowerCase();
+    if (lowerQuestion.includes('context') || lowerQuestion.includes('test') || lowerQuestion.includes('debug')) {
+      let debugResponse = `## 🧠 AI Context Debug Information
+
+I can see your database project in real-time! Here's what I have access to:
+
+### 📋 Project Details:
+- **Prompt**: "${context.prompt}"
+- **Database Type**: ${context.dbType}
+- **Status**: ${context.status}
+- **Session**: ${context.id}
+
+### 📊 Generated Content:
+`;
+      
+      Object.entries(context.generatedContent).forEach(([taskId, content]: [string, any]) => {
+        debugResponse += `- **${taskId}**: ${content.length} characters of generated content\n`;
+      });
+
+      debugResponse += `
+### 🤖 AI Insights (${context.insights.length} total):
+`;
+      context.insights.slice(-3).forEach((insight: any) => {
+        debugResponse += `- ${insight.agent}: "${insight.message.substring(0, 50)}..."\n`;
+      });
+
+      debugResponse += `
+### ✅ This proves I have real-time access to your streaming database generation!
+
+I can analyze:
+- All generated database schema code
+- AI agent reasoning and insights  
+- Task progress and completion status
+- Your original requirements and context
+
+**Try asking me:** "Show me the database schema" or "What tables were created?"
+`;
+
+      return {
+        content: debugResponse,
+        type: 'text',
+        confidence: 1.0
+      };
+    }
+
     let response = `Based on your "${context.prompt}" database project:
 
 ## Project Overview:
@@ -551,7 +603,8 @@ Feel free to ask me anything specific about your database design, implementation
 - "Show me example SQL queries"
 - "How can I optimize performance?"
 - "What security measures are included?"
-- "Give me API endpoint examples"`;
+- "Give me API endpoint examples"
+- **Test my context**: "Show me context" or "debug"`;
 
     return {
       content: response,
