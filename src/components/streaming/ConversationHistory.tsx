@@ -14,7 +14,7 @@ import {
   Loader2,
   RefreshCw
 } from 'lucide-react';
-import { streamingDataCapture, StreamingData } from '../../services/streamingDataCapture';
+import { conversationStorage, SavedConversation } from '../../services/conversationStorage';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface ConversationHistoryProps {
@@ -28,7 +28,7 @@ export function ConversationHistory({
 }: ConversationHistoryProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [conversations, setConversations] = useState<StreamingData[]>([]);
+  const [conversations, setConversations] = useState<SavedConversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
@@ -54,8 +54,7 @@ export function ConversationHistory({
   const loadConversations = async () => {
     try {
       setLoading(true);
-      await streamingDataCapture.initialize();
-      const sessions = await streamingDataCapture.getSavedSessions(user?.id || '');
+      const sessions = await conversationStorage.loadConversations(user?.id);
       console.log('Loaded conversations:', sessions.length, sessions);
       setConversations(sessions);
     } catch (error) {
@@ -66,16 +65,20 @@ export function ConversationHistory({
   };
 
   const handleDeleteConversation = async (sessionId: string) => {
-    // This would implement delete functionality
-    console.log('Delete conversation:', sessionId);
-    setShowDeleteModal(null);
-    // Refresh list after delete
-    loadConversations();
+    try {
+      await conversationStorage.deleteConversation(sessionId);
+      setShowDeleteModal(null);
+      // Refresh list after delete
+      loadConversations();
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+    }
   };
 
   const filteredConversations = conversations.filter(conv =>
     conv.prompt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.database_type?.toLowerCase().includes(searchTerm.toLowerCase())
+    conv.dbType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conv.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatDate = (dateString: string) => {
@@ -114,43 +117,6 @@ export function ConversationHistory({
     return prompt.substring(0, maxLength) + '...';
   };
 
-  const generateConversationTitle = (prompt: string, dbType: string) => {
-    // Create a meaningful title by extracting the main concept from the prompt
-    const cleanPrompt = prompt.replace(/[^\w\s]/g, '').toLowerCase();
-    
-    // Look for key entities/concepts
-    const concepts = [
-      'blog', 'ecommerce', 'shop', 'store', 'user', 'post', 'comment', 'article',
-      'inventory', 'product', 'order', 'customer', 'account', 'profile', 'message',
-      'chat', 'forum', 'social', 'media', 'library', 'book', 'school', 'student',
-      'course', 'lesson', 'task', 'project', 'team', 'company', 'employee',
-      'restaurant', 'food', 'recipe', 'menu', 'hotel', 'booking', 'reservation',
-      'ticket', 'event', 'calendar', 'schedule', 'appointment', 'medical', 'patient',
-      'hospital', 'clinic', 'finance', 'payment', 'transaction', 'bank', 'portfolio'
-    ];
-    
-    const foundConcept = concepts.find(concept => cleanPrompt.includes(concept));
-    
-    if (foundConcept) {
-      const capitalized = foundConcept.charAt(0).toUpperCase() + foundConcept.slice(1);
-      return `${capitalized} ${dbType} Database`;
-    }
-    
-    // Fallback: take first few meaningful words
-    const words = cleanPrompt.split(' ').filter(word => 
-      word.length > 3 && 
-      !['database', 'create', 'build', 'design', 'make', 'system', 'table', 'need', 'want', 'like', 'would'].includes(word)
-    );
-    
-    if (words.length > 0) {
-      const title = words.slice(0, 2)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      return `${title} ${dbType}`;
-    }
-    
-    return `${dbType} Database Design`;
-  };
 
   if (loading) {
     return (
@@ -227,7 +193,7 @@ export function ConversationHistory({
                     <div className="flex items-center gap-2 mb-2">
                       <Database className="w-4 h-4 text-blue-400 flex-shrink-0" />
                       <h3 className="font-medium text-white text-sm truncate">
-                        {generateConversationTitle(conversation.prompt, conversation.database_type)}
+                        {conversation.title}
                       </h3>
                       {getStatusIcon(conversation.status)}
                     </div>
@@ -245,7 +211,7 @@ export function ConversationHistory({
                       </div>
                       <div className="flex items-center gap-1">
                         <Database className="w-3 h-3" />
-                        <span>{conversation.database_type}</span>
+                        <span>{conversation.dbType}</span>
                       </div>
                       {conversation.status === 'completed' && (
                         <div className="flex items-center gap-1">

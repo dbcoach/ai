@@ -16,7 +16,7 @@ import {
   Database
 } from 'lucide-react';
 import { StreamingErrorBoundary } from './StreamingErrorBoundary';
-import { streamingDataCapture } from '../../services/streamingDataCapture';
+import { conversationStorage, ConversationTitleGenerator, SavedConversation } from '../../services/conversationStorage';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface StreamingTask {
@@ -41,9 +41,10 @@ interface StreamingSubtask {
 interface EnhancedStreamingInterfaceProps {
   prompt: string;
   dbType: string;
-  onComplete?: (projectId: string) => void;
+  onComplete?: (conversationId: string) => void;
   onError?: (error: string) => void;
   className?: string;
+  mode?: string; // 'dbcoach' | 'standard'
 }
 
 export function EnhancedStreamingInterface({ 
@@ -51,10 +52,11 @@ export function EnhancedStreamingInterface({
   dbType, 
   onComplete, 
   onError, 
-  className = '' 
+  className = '',
+  mode = 'dbcoach'
 }: EnhancedStreamingInterfaceProps) {
   const { user } = useAuth();
-  const [captureSessionId, setCaptureSessionId] = useState<string | null>(null);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [tasks, setTasks] = useState<StreamingTask[]>([]);
   const [activeTask, setActiveTask] = useState<StreamingTask | null>(null);
   const [totalProgress, setTotalProgress] = useState(0);
@@ -65,6 +67,7 @@ export function EnhancedStreamingInterface({
   const [insights, setInsights] = useState<Array<{ agent: string; message: string; timestamp: Date }>>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'none' | 'saving' | 'saved' | 'error'>('none');
+  const [startTime] = useState(() => new Date());
   
   const contentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const cursorRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
@@ -83,15 +86,13 @@ export function EnhancedStreamingInterface({
   }, []);
 
   const initializeStreamingSession = async () => {
-    if (!user) return;
-
     try {
-      // Initialize streaming data capture
-      await streamingDataCapture.initialize();
-      
-      // Start capture session
-      const sessionId = await streamingDataCapture.startCapture(user.id, prompt, dbType);
-      setCaptureSessionId(sessionId);
+      // Add initial insight
+      setInsights([{
+        agent: 'DB.Coach',
+        message: `Starting ${mode} database generation for: ${prompt}`,
+        timestamp: new Date()
+      }]);
 
       // Initialize predefined tasks
       const predefinedTasks = [
@@ -150,17 +151,9 @@ export function EnhancedStreamingInterface({
       ];
 
       setTasks(predefinedTasks);
-      
-      // Capture initial insight
-      await streamingDataCapture.captureInsight(
-        sessionId,
-        'DB.Coach',
-        `Starting database generation for: ${prompt}`,
-        'progress'
-      );
 
       // Start streaming simulation
-      startStreamingSimulation(sessionId, predefinedTasks);
+      startStreamingSimulation(predefinedTasks);
       
     } catch (error) {
       console.error('Failed to initialize streaming session:', error);
@@ -168,13 +161,12 @@ export function EnhancedStreamingInterface({
     }
   };
 
-  const startStreamingSimulation = (sessionId: string, tasks: StreamingTask[]) => {
+  const startStreamingSimulation = (tasks: StreamingTask[]) => {
     let currentTaskIndex = 0;
-    let currentProgress = 0;
 
     const processNextTask = async () => {
       if (currentTaskIndex >= tasks.length) {
-        await completeStreaming(sessionId);
+        await completeStreaming();
         return;
       }
 
@@ -182,16 +174,15 @@ export function EnhancedStreamingInterface({
       
       // Start task
       task.status = 'active';
-      task.startTime = new Date();
       setActiveTask(task);
       setTasks([...tasks]);
 
-      await streamingDataCapture.captureInsight(
-        sessionId,
-        task.agent,
-        `Starting ${task.title.toLowerCase()}...`,
-        'progress'
-      );
+      // Add insight about starting task
+      setInsights(prev => [...prev, {
+        agent: task.agent,
+        message: `Starting ${task.title.toLowerCase()}...`,
+        timestamp: new Date()
+      }]);
 
       // Generate content for this task
       const content = generateTaskContent(task, prompt, dbType);
@@ -212,23 +203,6 @@ export function EnhancedStreamingInterface({
             return newMap;
           });
 
-          // Capture chunk in real-time
-          if (newChars.length > 0) {
-            try {
-              await streamingDataCapture.captureChunk(
-                sessionId,
-                task.id,
-                task.title,
-                task.agent,
-                newChars,
-                getContentType(task.title),
-                { progress: (contentIndex / content.length) * 100 }
-              );
-            } catch (error) {
-              console.error('Error capturing chunk:', error);
-            }
-          }
-
           // Update progress
           const progress = Math.min(100, (contentIndex / content.length) * 100);
           task.progress = progress;
@@ -239,16 +213,15 @@ export function EnhancedStreamingInterface({
           } else {
             // Task completed
             task.status = 'completed';
-            task.endTime = new Date();
             task.progress = 100;
             setTasks([...tasks]);
 
-            await streamingDataCapture.captureInsight(
-              sessionId,
-              task.agent,
-              `${task.title} completed successfully!`,
-              'completion'
-            );
+            // Add completion insight
+            setInsights(prev => [...prev, {
+              agent: task.agent,
+              message: `${task.title} completed successfully!`,
+              timestamp: new Date()
+            }]);
 
             currentTaskIndex++;
             setTimeout(() => processNextTask(), 1000);
@@ -265,18 +238,47 @@ export function EnhancedStreamingInterface({
     processNextTask();
   };
 
-  const completeStreaming = async (sessionId: string) => {
+  const completeStreaming = async () => {
     try {
       setIsSaving(true);
       setSaveStatus('saving');
 
-      // Complete the capture session and create project
-      const projectId = await streamingDataCapture.completeCapture(sessionId, {
-        totalTasks: tasks.length,
-        completedTasks: tasks.filter(t => t.status === 'completed').length,
-        totalContent: Array.from(taskContent.values()).join('\n\n'),
-        insights: insights
-      });
+      // Create conversation data for localStorage
+      const endTime = new Date();
+      const title = ConversationTitleGenerator.generate(prompt, dbType);
+      
+      const conversation: SavedConversation = {
+        id: sessionId,
+        prompt,
+        dbType,
+        title,
+        generatedContent: Object.fromEntries(taskContent.entries()),
+        insights: insights.map(insight => ({
+          agent: insight.agent,
+          message: insight.message,
+          timestamp: insight.timestamp.toISOString()
+        })),
+        tasks: tasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          agent: task.agent,
+          status: 'completed' as const,
+          progress: task.progress
+        })),
+        createdAt: startTime.toISOString(),
+        updatedAt: endTime.toISOString(),
+        status: 'completed',
+        userId: user?.id,
+        metadata: {
+          duration: endTime.getTime() - startTime.getTime(),
+          totalChunks: Array.from(taskContent.values()).join('').length,
+          totalInsights: insights.length,
+          mode
+        }
+      };
+
+      // Save to localStorage
+      await conversationStorage.saveConversation(conversation);
 
       setSaveStatus('saved');
       setTotalProgress(100);
@@ -289,7 +291,8 @@ export function EnhancedStreamingInterface({
         timestamp: new Date()
       }]);
 
-      onComplete?.(projectId);
+      console.log(`Saved conversation: ${title}`);
+      onComplete?.(sessionId);
     } catch (error) {
       console.error('Error completing streaming:', error);
       setSaveStatus('error');
@@ -475,10 +478,8 @@ const api = {
 
   const handleStop = useCallback(() => {
     setIsPlaying(false);
-    if (captureSessionId) {
-      completeStreaming(captureSessionId);
-    }
-  }, [captureSessionId]);
+    completeStreaming();
+  }, []);
 
   const handleSpeedChange = useCallback((speed: number) => {
     setStreamingSpeed(speed);

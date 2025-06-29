@@ -27,14 +27,14 @@ export function StreamingPage() {
     }
   }, [prompt, navigate]);
 
-  // Handle generation completion - now handles project ID from enhanced interface
-  const handleStreamingComplete = async (projectId: string) => {
+  // Handle generation completion - now handles conversation ID from enhanced interface
+  const handleStreamingComplete = async (conversationId: string) => {
     try {
       setIsCompleted(true);
       
-      // Redirect to projects after short delay to show the saved project
+      // Redirect to conversations after short delay to show the saved conversation
       setTimeout(() => {
-        navigate('/projects', { replace: true });
+        navigate('/conversations', { replace: true });
       }, 3000);
       
     } catch (error) {
@@ -153,8 +153,8 @@ export function StreamingPage() {
               <div className="mb-4 p-4 bg-green-900/50 border border-green-700/50 rounded-lg text-green-200 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-green-400" />
-                  <span className="font-semibold">Streaming Complete!</span>
-                  <span>Your database design and streaming canvas have been saved. Redirecting...</span>
+                  <span className="font-semibold">Generation Complete!</span>
+                  <span>Your database conversation has been saved. Redirecting to conversations...</span>
                 </div>
               </div>
             )}
@@ -163,6 +163,7 @@ export function StreamingPage() {
               <EnhancedStreamingInterface
                 prompt={prompt}
                 dbType={dbType}
+                mode={mode}
                 onComplete={handleStreamingComplete}
                 onError={handleError}
                 className="h-full"

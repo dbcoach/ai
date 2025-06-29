@@ -17,6 +17,8 @@ import { streamingService, StreamingTask, StreamChunk } from '../../services/str
 import { streamingDataCapture } from '../../services/streamingDataCapture';
 import { StreamingErrorBoundary } from './StreamingErrorBoundary';
 
+import { SavedConversation } from '../../services/conversationStorage';
+
 interface StreamingInterfaceProps {
   prompt: string;
   dbType: string;
@@ -24,7 +26,7 @@ interface StreamingInterfaceProps {
   onError?: (error: string) => void;
   className?: string;
   isViewingMode?: boolean;
-  existingSessionId?: string;
+  existingConversation?: SavedConversation;
 }
 
 export function StreamingInterface({ 
@@ -34,7 +36,7 @@ export function StreamingInterface({
   onError, 
   className = '',
   isViewingMode = false,
-  existingSessionId
+  existingConversation
 }: StreamingInterfaceProps) {
   const [tasks, setTasks] = useState<StreamingTask[]>([]);
   const [activeTask, setActiveTask] = useState<StreamingTask | null>(null);
@@ -52,47 +54,32 @@ export function StreamingInterface({
   // Initialize streaming session or load existing data
   useEffect(() => {
     const initializeInterface = async () => {
-      if (isViewingMode && existingSessionId) {
+      if (isViewingMode && existingConversation) {
         // Load existing conversation data
         try {
-          await streamingDataCapture.initialize();
-          const chunks = await streamingDataCapture.getSessionChunks(existingSessionId);
-          const insights = await streamingDataCapture.getSessionInsights(existingSessionId);
+          // Create tasks from existing conversation
+          const existingTasks = existingConversation.tasks.map(task => ({
+            ...task,
+            estimatedTime: 0,
+            subtasks: []
+          }));
           
-          // Create tasks from existing data
-          const taskMap = new Map<string, StreamingTask>();
-          chunks.forEach(chunk => {
-            if (!taskMap.has(chunk.task_id)) {
-              taskMap.set(chunk.task_id, {
-                id: chunk.task_id,
-                title: chunk.task_title,
-                agent: chunk.agent_name,
-                status: 'completed' as const,
-                progress: 100,
-                estimatedTime: 0,
-                subtasks: []
-              });
-            }
-          });
-          
-          const existingTasks = Array.from(taskMap.values());
           setTasks(existingTasks);
           setTotalProgress(100);
           setIsPlaying(false);
           
           // Load content for each task
           const contentMap = new Map<string, string>();
-          chunks.forEach(chunk => {
-            const existing = contentMap.get(chunk.task_id) || '';
-            contentMap.set(chunk.task_id, existing + chunk.content);
+          Object.entries(existingConversation.generatedContent).forEach(([taskId, content]) => {
+            contentMap.set(taskId, content);
           });
           setTaskContent(contentMap);
           
           // Load insights
-          const formattedInsights = insights.map(insight => ({
-            agent: insight.agent_name,
-            message: insight.content,
-            timestamp: new Date(insight.created_at)
+          const formattedInsights = existingConversation.insights.map(insight => ({
+            agent: insight.agent,
+            message: insight.message,
+            timestamp: new Date(insight.timestamp)
           }));
           setInsights(formattedInsights);
           
@@ -165,7 +152,7 @@ export function StreamingInterface({
         streamingService.destroy();
       }
     };
-  }, [isViewingMode, existingSessionId, onError]);
+  }, [isViewingMode, existingConversation, onError]);
 
   // Event listeners for streaming service (only for new sessions)
   useEffect(() => {

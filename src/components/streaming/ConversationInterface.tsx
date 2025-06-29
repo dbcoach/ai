@@ -9,14 +9,14 @@ import {
 } from 'lucide-react';
 import { ConversationHistory } from './ConversationHistory';
 import { StreamingInterface } from './StreamingInterface';
-import { streamingDataCapture, StreamingData } from '../../services/streamingDataCapture';
+import { conversationStorage, SavedConversation } from '../../services/conversationStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../auth/ProtectedRoute';
 
 export function ConversationInterface() {
   const { user } = useAuth();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [selectedConversation, setSelectedConversation] = useState<StreamingData | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<SavedConversation | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,10 +30,8 @@ export function ConversationInterface() {
   const loadConversationData = async (sessionId: string) => {
     try {
       setLoading(true);
-      await streamingDataCapture.initialize();
-      const sessions = await streamingDataCapture.getSavedSessions(user?.id || '');
-      const conversation = sessions.find(s => s.id === sessionId);
-      setSelectedConversation(conversation || null);
+      const conversation = await conversationStorage.getConversation(sessionId);
+      setSelectedConversation(conversation);
     } catch (error) {
       console.error('Error loading conversation:', error);
       setSelectedConversation(null);
@@ -126,7 +124,7 @@ export function ConversationInterface() {
                           {selectedConversation.prompt}
                         </h2>
                         <div className="flex items-center gap-3 text-sm text-slate-400">
-                          <span>{selectedConversation.database_type}</span>
+                          <span>{selectedConversation.dbType}</span>
                           <span>•</span>
                           <span>{new Date(selectedConversation.created_at).toLocaleDateString()}</span>
                         </div>
@@ -145,12 +143,12 @@ export function ConversationInterface() {
                   <div className="flex-1 overflow-hidden">
                     <StreamingInterface
                       prompt={selectedConversation.prompt}
-                      dbType={selectedConversation.database_type}
+                      dbType={selectedConversation.dbType}
                       onComplete={() => {}}
                       onError={() => {}}
                       className="h-full"
                       isViewingMode={true}
-                      existingSessionId={selectedConversation.id}
+                      existingConversation={selectedConversation}
                     />
                   </div>
                 </div>
