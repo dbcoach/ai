@@ -716,6 +716,13 @@ const api = {
     }
   }, [chatMessages]);
 
+  // Focus chat input when chat is shown
+  useEffect(() => {
+    if (showChat && chatInputRef.current) {
+      chatInputRef.current.focus();
+    }
+  }, [showChat]);
+
   return (
     <StreamingErrorBoundary>
       <div className={`h-full bg-slate-900/20 rounded-xl border border-slate-700/50 overflow-hidden ${className}`}>
@@ -745,7 +752,9 @@ const api = {
               title={showChat ? 'Hide Chat' : 'Show Chat'}
             >
               <MessageSquare className="w-4 h-4" />
-              <span className="text-sm font-medium">Chat</span>
+              <span className="text-sm font-medium">
+                Chat {showChat ? '✓' : ''}
+              </span>
             </button>
             
             {/* Save Status Indicator */}
@@ -785,7 +794,7 @@ const api = {
           </div>
         </div>
 
-        <div className="flex h-full">
+        <div className="flex h-full min-h-0">
           {/* Left Side: AI Agent Reasoning Stream */}
           <div className={`${showChat ? 'w-1/3' : 'w-1/2'} border-r border-slate-700/50 bg-slate-800/20 flex flex-col overflow-hidden transition-all duration-300`}>
             <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
@@ -1011,7 +1020,7 @@ const api = {
 
           {/* Right Side: Chat Panel */}
           {showChat && (
-            <div className="w-1/3 bg-slate-800/10 flex flex-col overflow-hidden min-h-0">
+            <div className="w-1/3 bg-slate-800/10 flex flex-col overflow-hidden min-h-0 h-full">
               <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-blue-400" />
@@ -1101,7 +1110,7 @@ const api = {
               </div>
 
               {/* Chat Input */}
-              <div className="border-t border-slate-700/50 bg-slate-800/30 p-4 flex-shrink-0">
+              <div className="border-t border-slate-700/50 bg-slate-800/30 p-4 flex-shrink-0 min-h-[80px]">
                 <div className="flex items-center gap-3">
                   <input
                     ref={chatInputRef}
@@ -1116,12 +1125,12 @@ const api = {
                     }}
                     placeholder="Ask about the database design..."
                     disabled={isChatLoading}
-                    className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0"
+                    className="flex-1 px-4 py-3 bg-slate-900/80 border-2 border-slate-600/50 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 disabled:opacity-50 min-w-0 h-12"
                   />
                   <button
                     onClick={handleSendChatMessage}
                     disabled={!chatInput.trim() || isChatLoading}
-                    className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg transition-all duration-200 disabled:opacity-50"
+                    className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
                   >
                     {isChatLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

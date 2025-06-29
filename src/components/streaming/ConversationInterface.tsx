@@ -59,47 +59,38 @@ export function ConversationInterface() {
         
         <div className="relative z-10 h-screen flex flex-col">
           {/* Navigation Header */}
-          <nav className="p-4 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
-            <div className="flex items-center justify-between max-w-7xl mx-auto">
-              <div className="flex items-center space-x-4">
+          <nav className="px-6 py-3 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
                 <Link
                   to="/"
-                  className="flex items-center space-x-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-all duration-200"
+                  className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
                 >
                   <Home className="w-4 h-4" />
                   <span className="font-medium">Home</span>
                 </Link>
-                
-                <div className="flex items-center space-x-2 text-slate-400">
-                  <span>/</span>
+                <span className="text-slate-600">/</span>
+                <div className="flex items-center space-x-2">
                   <MessageSquare className="w-4 h-4 text-purple-400" />
-                  <span className="text-purple-300 font-medium">Database Generations</span>
+                  <span className="text-white font-medium">Database Generations</span>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={handleNewGeneration}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="font-medium">New Generation</span>
-                </button>
-                
+              <div className="flex items-center space-x-2">
                 <Link 
                   to="/projects" 
-                  className="flex items-center space-x-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-all duration-200"
+                  className="flex items-center space-x-1 px-2 py-1 text-slate-400 hover:text-white transition-colors"
                 >
                   <Database className="w-4 h-4" />
-                  <span className="font-medium">Projects</span>
+                  <span className="text-sm">Projects</span>
                 </Link>
                 
                 <Link 
                   to="/settings" 
-                  className="flex items-center space-x-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-all duration-200"
+                  className="flex items-center space-x-1 px-2 py-1 text-slate-400 hover:text-white transition-colors"
                 >
                   <Settings className="w-4 h-4" />
-                  <span className="font-medium hidden sm:inline">Settings</span>
+                  <span className="text-sm hidden sm:inline">Settings</span>
                 </Link>
               </div>
             </div>
@@ -120,25 +111,15 @@ export function ConversationInterface() {
               {selectedConversation ? (
                 <div className="h-full flex flex-col">
                   {/* Conversation Header */}
-                  <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-lg font-semibold text-white mb-1">
-                          {selectedConversation.prompt}
-                        </h2>
-                        <div className="flex items-center gap-3 text-sm text-slate-400">
-                          <span>{selectedConversation.dbType}</span>
-                          <span>•</span>
-                          <span>{new Date(selectedConversation.createdAt).toLocaleDateString()}</span>
-                        </div>
+                  <div className="px-6 py-3 border-b border-slate-700/50 bg-slate-800/20">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white mb-1 truncate">
+                        {selectedConversation.prompt}
+                      </h2>
+                      <div className="flex items-center gap-3 text-sm text-slate-400">
+                        <span className="px-2 py-1 bg-slate-700/50 rounded text-xs">{selectedConversation.dbType}</span>
+                        <span>{new Date(selectedConversation.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <button
-                        onClick={handleNewGeneration}
-                        className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors text-sm"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>New Generation</span>
-                      </button>
                     </div>
                   </div>
                   
