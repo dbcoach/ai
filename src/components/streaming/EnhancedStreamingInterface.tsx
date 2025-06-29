@@ -961,61 +961,6 @@ const api = {
               </div>
             </div>
 
-            {/* Controls */}
-            <div className="border-t border-slate-700/50 bg-slate-800/30 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handlePlayPause}
-                    disabled={isSaving}
-                    className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg transition-all duration-200 disabled:opacity-50"
-                  >
-                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </button>
-                  
-                  <button
-                    onClick={handleStop}
-                    disabled={isSaving}
-                    className="flex items-center justify-center w-10 h-10 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <Square className="w-5 h-5" />
-                  </button>
-                  
-                  <button
-                    onClick={() => handleStop()}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        Save & Complete
-                      </>
-                    )}
-                  </button>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <label className="text-sm text-slate-300">Speed:</label>
-                  <input
-                    type="range"
-                    min="10"
-                    max="100"
-                    value={streamingSpeed}
-                    onChange={(e) => handleSpeedChange(Number(e.target.value))}
-                    className="w-24 accent-purple-500"
-                  />
-                  <span className="text-sm text-slate-400 font-mono w-8">
-                    {(streamingSpeed / 40).toFixed(1)}x
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Right Side: Chat Panel */}

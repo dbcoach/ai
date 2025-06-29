@@ -121,36 +121,74 @@ export class AIChatService {
   private static generateSchemaResponse(question: string, context: any): ChatResponse {
     const schemaContent = context.generatedContent['schema_design'] || '';
     const requirementsContent = context.generatedContent['requirements_analysis'] || '';
+    const implementationContent = context.generatedContent['implementation_package'] || '';
     
-    let response = `Based on the generated database schema for "${context.prompt}":
+    // Look for actual SQL content
+    let response = `## Database Schema Analysis\n\nFor your "${context.prompt}" ${context.dbType} database:\n\n`;
 
-## Database Schema Overview
+    // Extract actual table information from generated content
+    if (schemaContent || implementationContent) {
+      const allContent = schemaContent + ' ' + implementationContent;
+      
+      // Find CREATE TABLE statements
+      const createTableMatches = allContent.match(/CREATE TABLE\s+(\w+)\s*\(([\s\S]*?)\);/gi);
+      if (createTableMatches && createTableMatches.length > 0) {
+        response += `### 📋 Generated Tables:\n\n`;
+        createTableMatches.forEach((tableSQL, index) => {
+          const tableName = tableSQL.match(/CREATE TABLE\s+(\w+)/i)?.[1] || `table_${index + 1}`;
+          response += `**${tableName}**:\n\`\`\`sql\n${tableSQL}\n\`\`\`\n\n`;
+        });
+      } else {
+        // Look for table mentions in the content
+        const tableKeywords = ['users', 'entities', 'categories', 'products', 'orders', 'customers'];
+        const mentionedTables = tableKeywords.filter(table => 
+          allContent.toLowerCase().includes(table.toLowerCase())
+        );
+        
+        if (mentionedTables.length > 0) {
+          response += `### 📋 Identified Tables:\n`;
+          mentionedTables.forEach(table => {
+            response += `- **${table}** (mentioned in generated content)\n`;
+          });
+          response += '\n';
+        }
+      }
 
-The schema has been designed as a ${context.dbType} database with the following key characteristics:
-
-`;
-
-    if (schemaContent.includes('CREATE TABLE')) {
-      response += `### Main Tables:
-${this.extractTablesFromSQL(schemaContent)}
-
-`;
+      // Extract relationships
+      const foreignKeyMatches = allContent.match(/REFERENCES\s+(\w+)\s*\(/gi);
+      if (foreignKeyMatches && foreignKeyMatches.length > 0) {
+        response += `### 🔗 Relationships:\n`;
+        foreignKeyMatches.forEach(fk => {
+          const referencedTable = fk.match(/REFERENCES\s+(\w+)/i)?.[1];
+          response += `- Foreign key reference to **${referencedTable}**\n`;
+        });
+        response += '\n';
+      }
+    } else {
+      response += `### ⏳ Schema Generation Status:\n`;
+      response += `The schema design is currently being generated. Content available:\n`;
+      Object.keys(context.generatedContent).forEach(key => {
+        const length = context.generatedContent[key].length;
+        response += `- **${key}**: ${length} characters\n`;
+      });
+      response += '\nThe schema will appear as the "Schema Design" task completes.\n\n';
     }
 
-    if (requirementsContent.includes('Entities')) {
-      response += `### Core Entities:
-${this.extractEntitiesFromRequirements(requirementsContent)}
-
-`;
+    // Add insights from AI agents
+    if (context.insights && context.insights.length > 0) {
+      const schemaInsights = context.insights.filter((insight: any) => 
+        insight.message.toLowerCase().includes('schema') || 
+        insight.message.toLowerCase().includes('table') ||
+        insight.message.toLowerCase().includes('design')
+      );
+      
+      if (schemaInsights.length > 0) {
+        response += `### 🤖 AI Agent Insights:\n`;
+        schemaInsights.slice(-2).forEach((insight: any) => {
+          response += `- **${insight.agent}**: ${insight.message}\n`;
+        });
+      }
     }
-
-    response += `The schema follows database design best practices including:
-- Proper normalization (3NF compliance)
-- Primary and foreign key constraints
-- Appropriate data types for each field
-- Indexed fields for optimal query performance
-
-Would you like me to explain any specific aspect of the schema in more detail?`;
 
     return {
       content: response,
@@ -196,56 +234,86 @@ These relationships ensure data integrity and support efficient querying pattern
 
   private static generateQueryResponse(question: string, context: any): ChatResponse {
     const implementationContent = context.generatedContent['implementation_package'] || '';
+    const schemaContent = context.generatedContent['schema_design'] || '';
     
-    let response = `## SQL Query Examples
+    let response = `## SQL Queries for "${context.prompt}"\n\n`;
 
-Here are some key queries for your "${context.prompt}" database:
+    // Try to extract actual SQL from generated content
+    const allContent = implementationContent + ' ' + schemaContent;
+    const sqlBlocks = allContent.match(/```sql([\s\S]*?)```/gi);
+    
+    if (sqlBlocks && sqlBlocks.length > 0) {
+      response += `### 📋 Generated SQL Examples:\n\n`;
+      sqlBlocks.forEach((block, index) => {
+        const cleanSQL = block.replace(/```sql\n?/gi, '').replace(/```/g, '').trim();
+        if (cleanSQL.length > 20) {
+          response += `**Query ${index + 1}:**\n\`\`\`sql\n${cleanSQL}\n\`\`\`\n\n`;
+        }
+      });
+    }
 
-`;
+    // Extract table names from CREATE TABLE statements
+    const tableMatches = allContent.match(/CREATE TABLE\s+(\w+)/gi);
+    const tableNames = tableMatches ? tableMatches.map(match => match.split(' ')[2]) : ['users', 'main_entities'];
 
-    if (implementationContent.includes('SELECT')) {
-      response += this.extractQueriesFromImplementation(implementationContent);
-    } else {
-      response += `### Basic Queries:
+    response += `### 🔍 Custom Queries for Your Tables:\n\n`;
 
-\`\`\`sql
--- Get all users
-SELECT * FROM users ORDER BY created_at DESC;
-
--- Get entities with user information
-SELECT e.*, u.username 
-FROM main_entities e 
-JOIN users u ON e.user_id = u.id;
-
--- Count entities by status
-SELECT status, COUNT(*) as count 
-FROM main_entities 
-GROUP BY status;
-\`\`\`
-
-### Advanced Queries:
-
-\`\`\`sql
--- Search with pagination
-SELECT * FROM main_entities 
-WHERE name ILIKE '%search_term%' 
+    // Generate specific queries based on identified tables
+    if (tableNames.length > 0) {
+      const primaryTable = tableNames[0];
+      
+      response += `\`\`\`sql
+-- Get all records from ${primaryTable}
+SELECT * FROM ${primaryTable} 
 ORDER BY created_at DESC 
-LIMIT 20 OFFSET 0;
+LIMIT 20;
 
--- Get recent activity
-SELECT e.name, e.created_at, u.username
-FROM main_entities e
-JOIN users u ON e.user_id = u.id
-WHERE e.created_at >= NOW() - INTERVAL '7 days'
-ORDER BY e.created_at DESC;
+-- Count records in ${primaryTable}
+SELECT COUNT(*) as total_records 
+FROM ${primaryTable};
+`;
+
+      if (tableNames.length > 1) {
+        const secondaryTable = tableNames[1];
+        response += `
+-- Join ${primaryTable} with ${secondaryTable}
+SELECT p.*, s.name as related_name
+FROM ${primaryTable} p
+LEFT JOIN ${secondaryTable} s ON p.${secondaryTable.slice(0, -1)}_id = s.id
+ORDER BY p.created_at DESC;
+`;
+      }
+
+      // Add search query if appropriate
+      response += `
+-- Search in ${primaryTable}
+SELECT * FROM ${primaryTable} 
+WHERE name ILIKE '%search_term%' 
+   OR description ILIKE '%search_term%'
+ORDER BY created_at DESC;
+
+-- Recent records (last 7 days)
+SELECT * FROM ${primaryTable} 
+WHERE created_at >= NOW() - INTERVAL '7 days'
+ORDER BY created_at DESC;
 \`\`\`
 `;
+    }
+
+    // Add progress info if tables are still being generated
+    if (!tableMatches || tableMatches.length === 0) {
+      response += `### ⏳ Query Generation Status:\n`;
+      response += `Tables are currently being designed. Available content:\n`;
+      Object.keys(context.generatedContent).forEach(key => {
+        response += `- ${key}: ${context.generatedContent[key].length} characters\n`;
+      });
+      response += `\nSQL queries will be generated as the schema is completed!\n`;
     }
 
     return {
       content: response,
       type: 'sql',
-      confidence: 0.8
+      confidence: 0.9
     };
   }
 
@@ -525,8 +593,9 @@ Need help with any specific implementation step?`;
   }
 
   private static generateGeneralResponse(question: string, context: any): ChatResponse {
-    // Check if user is asking about context or testing
     const lowerQuestion = question.toLowerCase();
+    
+    // Check if user is asking about context or testing
     if (lowerQuestion.includes('context') || lowerQuestion.includes('test') || lowerQuestion.includes('debug')) {
       let debugResponse = `## 🧠 AI Context Debug Information
 
@@ -571,45 +640,77 @@ I can analyze:
       };
     }
 
-    let response = `Based on your "${context.prompt}" database project:
+    // Try to answer specific questions based on content
+    if (lowerQuestion.includes('what') || lowerQuestion.includes('how') || lowerQuestion.includes('why') || lowerQuestion.includes('explain')) {
+      // Look for keywords in the question to provide relevant answers
+      if (lowerQuestion.includes('table') || lowerQuestion.includes('schema') || lowerQuestion.includes('structure')) {
+        return this.generateSchemaResponse(question, context);
+      }
+      
+      if (lowerQuestion.includes('relationship') || lowerQuestion.includes('foreign key') || lowerQuestion.includes('join')) {
+        return this.generateRelationshipsResponse(question, context);
+      }
+      
+      if (lowerQuestion.includes('query') || lowerQuestion.includes('sql') || lowerQuestion.includes('select')) {
+        return this.generateQueryResponse(question, context);
+      }
+      
+      if (lowerQuestion.includes('performance') || lowerQuestion.includes('optimize') || lowerQuestion.includes('index')) {
+        return this.generatePerformanceResponse(question, context);
+      }
+      
+      if (lowerQuestion.includes('api') || lowerQuestion.includes('endpoint') || lowerQuestion.includes('rest')) {
+        return this.generateApiResponse(question, context);
+      }
+    }
 
-## Project Overview:
-- **Database Type**: ${context.dbType}
-- **Status**: ${context.status}
-- **Generated Components**: ${context.tasks.length} main sections
+    // Analyze the actual generated content to give specific insights
+    let response = `## 💬 About your "${context.prompt}" database:\n\n`;
+    
+    // Show current generation progress
+    const completedTasks = context.tasks.filter((task: any) => task.status === 'completed');
+    const totalTasks = context.tasks.length;
+    
+    if (completedTasks.length > 0) {
+      response += `### ✅ Progress: ${completedTasks.length}/${totalTasks} tasks completed\n\n`;
+      
+      // Show actual content summaries
+      Object.entries(context.generatedContent).forEach(([taskId, content]: [string, any]) => {
+        if (content && content.length > 0) {
+          const taskName = taskId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+          const preview = content.substring(0, 150).replace(/\n/g, ' ').trim();
+          response += `**${taskName}**: ${preview}${content.length > 150 ? '...' : ''}\n\n`;
+        }
+      });
+    } else {
+      response += `### ⏳ Generation in progress...\n\nThe AI agents are currently working on:\n`;
+      context.tasks.forEach((task: any) => {
+        const status = task.status === 'completed' ? '✅' : task.status === 'active' ? '🔄' : '⏳';
+        response += `${status} ${task.title}\n`;
+      });
+      response += '\n';
+    }
 
-## Available Information:
-I can help you with questions about:
-- 📊 **Database Schema**: Table structures, relationships, and design decisions
-- 🔍 **SQL Queries**: Sample queries and optimization techniques  
-- ⚡ **Performance**: Indexing strategies and optimization recommendations
-- 🔒 **Security**: Access control, encryption, and best practices
-- 🛠️ **Implementation**: Code examples and deployment guidance
-- 🔗 **API Design**: REST endpoints and integration patterns
+    // Recent AI insights
+    if (context.insights && context.insights.length > 0) {
+      response += `### 🤖 Latest AI Agent Activity:\n`;
+      context.insights.slice(-2).forEach((insight: any) => {
+        response += `- **${insight.agent}**: ${insight.message}\n`;
+      });
+      response += '\n';
+    }
 
-## Current Progress:
-`;
-
-    context.tasks.forEach((task: any) => {
-      const status = task.status === 'completed' ? '✅' : '⏳';
-      response += `${status} ${task.title} (${task.agent})\n`;
-    });
-
-    response += `
-Feel free to ask me anything specific about your database design, implementation, or any technical aspects!
-
-**Example questions you can ask:**
-- "Explain the main database relationships"
-- "Show me example SQL queries"
-- "How can I optimize performance?"
-- "What security measures are included?"
-- "Give me API endpoint examples"
-- **Test my context**: "Show me context" or "debug"`;
+    response += `### 💡 What would you like to know?\n`;
+    response += `Ask me specific questions like:\n`;
+    response += `- "What tables are being created?"\n`;
+    response += `- "Show me the SQL code"\n`;
+    response += `- "How does this database work?"\n`;
+    response += `- "What are the relationships?"\n`;
 
     return {
       content: response,
       type: 'text',
-      confidence: 0.7
+      confidence: 0.8
     };
   }
 
