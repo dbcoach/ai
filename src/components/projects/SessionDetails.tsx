@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { DatabaseProject, DatabaseSession, DatabaseQuery, databaseProjectsService } from '../../services/databaseProjectsService';
 import { AddQueryModal } from './AddQueryModal';
+import { StreamingResultsViewer } from '../streaming/StreamingResultsViewer';
 import { 
   ArrowLeft,
   Plus,
@@ -17,7 +18,9 @@ import {
   Eye,
   Download,
   Home,
-  Settings
+  Settings,
+  Zap,
+  MessageSquare
 } from 'lucide-react';
 
 interface SessionDetailsProps {
@@ -31,10 +34,24 @@ export function SessionDetails({ session, project, onBack }: SessionDetailsProps
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedQuery, setSelectedQuery] = useState<DatabaseQuery | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'standard' | 'streaming'>('standard');
 
   useEffect(() => {
     loadQueries();
   }, [session.id]);
+
+  useEffect(() => {
+    // Auto-detect if this is a streaming session
+    const hasStreamingResults = queries.some(query => 
+      query.results_data && 
+      typeof query.results_data === 'object' && 
+      (query.results_data.taskId || query.results_data.content)
+    );
+    
+    if (hasStreamingResults && viewMode === 'standard') {
+      setViewMode('streaming');
+    }
+  }, [queries]);
 
   const loadQueries = async () => {
     try {
@@ -152,6 +169,115 @@ export function SessionDetails({ session, project, onBack }: SessionDetailsProps
     );
   };
 
+  const isStreamingSession = queries.some(query => 
+    query.results_data && 
+    typeof query.results_data === 'object' && 
+    (query.results_data.taskId || query.results_data.content)
+  );
+
+  const handleStartNewChat = () => {
+    // Navigate to streaming interface with context
+    const searchParams = new URLSearchParams({
+      prompt: project.description || '',
+      dbType: project.database_type,
+      mode: 'continue',
+      projectId: project.id,
+      sessionId: session.id
+    });
+    window.location.href = `/streaming?${searchParams.toString()}`;
+  };
+
+  const handleExport = (format: 'json' | 'csv' | 'pdf') => {
+    const data = {
+      project: project.database_name,
+      session: session.session_name,
+      timestamp: session.created_at,
+      queries: queries.map(q => ({
+        id: q.id,
+        query_text: q.query_text,
+        query_type: q.query_type,
+        results_data: q.results_data,
+        created_at: q.created_at,
+        success: q.success
+      }))
+    };
+    
+    if (format === 'json') {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${project.database_name}-${session.session_name || 'session'}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  // If this is a streaming session and we're in streaming view mode, show StreamingResultsViewer
+  if (isStreamingSession && viewMode === 'streaming') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/30 to-slate-900/20 pointer-events-none" />
+        
+        <div className="relative z-10 container max-w-7xl mx-auto py-10 px-4 md:px-8">
+          {/* Navigation Header */}
+          <nav className="mb-6 p-4 rounded-2xl bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 shadow-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Link 
+                  to="/" 
+                  className="flex items-center space-x-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-all duration-200"
+                >
+                  <Home className="w-4 h-4" />
+                  <span className="font-medium">Home</span>
+                </Link>
+                
+                <div className="flex items-center space-x-2 text-slate-400">
+                  <span>/</span>
+                  <Link to="/projects" className="text-slate-400 hover:text-purple-300 transition-colors">
+                    Projects
+                  </Link>
+                  <span>/</span>
+                  <span className="text-slate-400 hover:text-purple-300 transition-colors cursor-pointer" onClick={onBack}>
+                    {project.database_name}
+                  </span>
+                  <span>/</span>
+                  <span className="text-purple-300 font-medium">{session.session_name || 'Session'}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setViewMode('standard')}
+                  className="flex items-center space-x-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-all duration-200"
+                >
+                  <Code className="w-4 h-4" />
+                  <span className="font-medium">Standard View</span>
+                </button>
+                
+                <Link 
+                  to="/settings" 
+                  className="flex items-center space-x-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-all duration-200"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="font-medium hidden sm:inline">Settings</span>
+                </Link>
+              </div>
+            </div>
+          </nav>
+
+          <StreamingResultsViewer
+            project={project}
+            session={session}
+            queries={queries}
+            onStartNewChat={handleStartNewChat}
+            onExport={handleExport}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="fixed inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/30 to-slate-900/20 pointer-events-none" />
@@ -253,14 +379,36 @@ export function SessionDetails({ session, project, onBack }: SessionDetailsProps
         {/* Action Bar */}
         <div className="mb-6 p-4 rounded-xl bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 shadow-xl">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Query History</h2>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Query</span>
-            </button>
+            <div className="flex items-center space-x-4">
+              <h2 className="text-lg font-semibold text-white">Query History</h2>
+              {isStreamingSession && (
+                <button
+                  onClick={() => setViewMode('streaming')}
+                  className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 hover:from-purple-600/30 hover:to-blue-600/30 text-purple-300 border border-purple-500/30 rounded-lg transition-colors"
+                >
+                  <Zap className="h-4 w-4" />
+                  <span>Streaming View</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              {isStreamingSession && (
+                <button
+                  onClick={handleStartNewChat}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-lg transition-colors"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Continue Chat</span>
+                </button>
+              )}
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Query</span>
+              </button>
+            </div>
           </div>
         </div>
 

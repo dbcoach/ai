@@ -8,7 +8,8 @@ import {
   FolderOpen,
   MousePointer,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 
 interface ProjectsListProps {
@@ -81,6 +82,12 @@ export function ProjectsList({ projects, loading, onProjectSelect, onProjectDele
     setShowDeleteModal(null);
   };
 
+  const hasStreamingResults = (project: DatabaseProject) => {
+    return project.metadata && 
+           project.metadata.generation_mode && 
+           project.metadata.streaming_results;
+  };
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -147,6 +154,12 @@ export function ProjectsList({ projects, loading, onProjectSelect, onProjectDele
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDbTypeColor(project.database_type)}`}>
                 {project.database_type}
               </span>
+              {hasStreamingResults(project) && (
+                <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-full">
+                  <Zap className="w-3 h-3 text-purple-300" />
+                  <span className="text-xs font-medium text-purple-300">Streaming</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
@@ -192,7 +205,12 @@ export function ProjectsList({ projects, loading, onProjectSelect, onProjectDele
           {/* Hover indicator */}
           <div className="mt-4 pt-4 border-t border-slate-700/50 opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="flex items-center space-x-2 text-xs text-purple-400">
-              <span>Click to view sessions and history</span>
+              <span>
+                {hasStreamingResults(project) 
+                  ? 'Click to view streaming results and chat history'
+                  : 'Click to view sessions and history'
+                }
+              </span>
               <MousePointer className="h-3 w-3" />
             </div>
           </div>
