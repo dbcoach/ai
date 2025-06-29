@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ConversationHistory } from './ConversationHistory';
 import { EnhancedStreamingInterface } from './EnhancedStreamingInterface';
+import { StreamingErrorBoundary } from './StreamingErrorBoundary';
 import { conversationStorage, SavedConversation } from '../../services/conversationStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../auth/ProtectedRoute';
@@ -30,10 +31,12 @@ export function ConversationInterface() {
   const loadConversationData = async (sessionId: string) => {
     try {
       setLoading(true);
+      console.log('🔍 Loading conversation data for sessionId:', sessionId);
       const conversation = await conversationStorage.getConversation(sessionId);
+      console.log('📋 Loaded conversation:', conversation);
       setSelectedConversation(conversation);
     } catch (error) {
-      console.error('Error loading conversation:', error);
+      console.error('❌ Error loading conversation:', error);
       setSelectedConversation(null);
     } finally {
       setLoading(false);
@@ -141,15 +144,29 @@ export function ConversationInterface() {
                   
                   {/* Streaming Interface */}
                   <div className="flex-1 overflow-hidden">
-                    <EnhancedStreamingInterface
-                      prompt={selectedConversation.prompt}
-                      dbType={selectedConversation.dbType}
-                      onComplete={() => {}}
-                      onError={() => {}}
-                      className="h-full"
-                      isViewingMode={true}
-                      existingConversation={selectedConversation}
-                    />
+                    <StreamingErrorBoundary>
+                      <div className="h-full p-4">
+                        {/* Temporary debug view */}
+                        <div className="bg-slate-800/50 rounded-lg p-4 mb-4">
+                          <h3 className="text-white font-semibold mb-2">Debug: Conversation Data</h3>
+                          <pre className="text-slate-300 text-xs overflow-auto max-h-32">
+                            {JSON.stringify(selectedConversation, null, 2)}
+                          </pre>
+                        </div>
+                        
+                        <EnhancedStreamingInterface
+                          prompt={selectedConversation.prompt}
+                          dbType={selectedConversation.dbType}
+                          onComplete={() => {}}
+                          onError={(error) => {
+                            console.error('❌ EnhancedStreamingInterface error:', error);
+                          }}
+                          className="h-full"
+                          isViewingMode={true}
+                          existingConversation={selectedConversation}
+                        />
+                      </div>
+                    </StreamingErrorBoundary>
                   </div>
                 </div>
               ) : loading ? (
