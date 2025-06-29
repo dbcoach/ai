@@ -45,6 +45,8 @@ interface EnhancedStreamingInterfaceProps {
   onError?: (error: string) => void;
   className?: string;
   mode?: string; // 'dbcoach' | 'standard'
+  isViewingMode?: boolean;
+  existingConversation?: SavedConversation;
 }
 
 export function EnhancedStreamingInterface({ 
@@ -53,7 +55,9 @@ export function EnhancedStreamingInterface({
   onComplete, 
   onError, 
   className = '',
-  mode = 'dbcoach'
+  mode = 'dbcoach',
+  isViewingMode = false,
+  existingConversation
 }: EnhancedStreamingInterfaceProps) {
   const { user } = useAuth();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -76,14 +80,54 @@ export function EnhancedStreamingInterface({
 
   // Initialize streaming session and capture
   useEffect(() => {
-    initializeStreamingSession();
+    if (isViewingMode && existingConversation) {
+      loadExistingConversation();
+    } else {
+      initializeStreamingSession();
+    }
     
     return () => {
       if (streamingIntervalRef.current) {
         clearInterval(streamingIntervalRef.current);
       }
     };
-  }, []);
+  }, [isViewingMode, existingConversation]);
+
+  const loadExistingConversation = () => {
+    if (!existingConversation) return;
+    
+    console.log('🔍 Loading existing conversation in enhanced viewing mode:', existingConversation);
+    
+    // Load existing tasks
+    setTasks(existingConversation.tasks.map(task => ({
+      id: task.id,
+      title: task.title,
+      agent: task.agent,
+      status: 'completed' as const,
+      progress: 100,
+      estimatedTime: 0,
+      subtasks: []
+    })));
+    
+    // Load existing content
+    const contentMap = new Map<string, string>();
+    Object.entries(existingConversation.generatedContent).forEach(([taskId, content]) => {
+      contentMap.set(taskId, content);
+    });
+    setTaskContent(contentMap);
+    
+    // Load existing insights
+    setInsights(existingConversation.insights.map(insight => ({
+      agent: insight.agent,
+      message: insight.message,
+      timestamp: new Date(insight.timestamp)
+    })));
+    
+    // Set completed state
+    setTotalProgress(100);
+    setIsPlaying(false);
+    setSaveStatus('saved');
+  };
 
   const initializeStreamingSession = async () => {
     try {
@@ -162,6 +206,9 @@ export function EnhancedStreamingInterface({
   };
 
   const startStreamingSimulation = (tasks: StreamingTask[]) => {
+    // Don't start streaming in viewing mode
+    if (isViewingMode) return;
+    
     let currentTaskIndex = 0;
 
     const processNextTask = async () => {
@@ -239,6 +286,9 @@ export function EnhancedStreamingInterface({
   };
 
   const completeStreaming = async () => {
+    // Don't save in viewing mode - already saved
+    if (isViewingMode) return;
+    
     try {
       setIsSaving(true);
       setSaveStatus('saving');

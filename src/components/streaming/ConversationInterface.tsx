@@ -8,7 +8,7 @@ import {
   Database
 } from 'lucide-react';
 import { ConversationHistory } from './ConversationHistory';
-import { StreamingInterface } from './StreamingInterface';
+import { EnhancedStreamingInterface } from './EnhancedStreamingInterface';
 import { conversationStorage, SavedConversation } from '../../services/conversationStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../auth/ProtectedRoute';
@@ -141,7 +141,7 @@ export function ConversationInterface() {
                   
                   {/* Streaming Interface */}
                   <div className="flex-1 overflow-hidden">
-                    <StreamingInterface
+                    <EnhancedStreamingInterface
                       prompt={selectedConversation.prompt}
                       dbType={selectedConversation.dbType}
                       onComplete={() => {}}

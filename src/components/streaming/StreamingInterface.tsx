@@ -56,14 +56,20 @@ export function StreamingInterface({
     const initializeInterface = async () => {
       if (isViewingMode && existingConversation) {
         // Load existing conversation data
+        console.log('🔍 Loading existing conversation in viewing mode:', existingConversation);
         try {
           // Create tasks from existing conversation
-          const existingTasks = existingConversation.tasks.map(task => ({
-            ...task,
+          const existingTasks: StreamingTask[] = existingConversation.tasks.map(task => ({
+            id: task.id,
+            title: task.title,
+            agent: task.agent,
+            status: task.status as 'pending' | 'active' | 'completed' | 'error',
+            progress: task.progress,
             estimatedTime: 0,
             subtasks: []
           }));
           
+          console.log('📋 Setting tasks:', existingTasks);
           setTasks(existingTasks);
           setTotalProgress(100);
           setIsPlaying(false);
@@ -73,6 +79,7 @@ export function StreamingInterface({
           Object.entries(existingConversation.generatedContent).forEach(([taskId, content]) => {
             contentMap.set(taskId, content);
           });
+          console.log('📝 Setting task content:', contentMap);
           setTaskContent(contentMap);
           
           // Load insights
@@ -81,23 +88,26 @@ export function StreamingInterface({
             message: insight.message,
             timestamp: new Date(insight.timestamp)
           }));
+          console.log('💡 Setting insights:', formattedInsights);
           setInsights(formattedInsights);
           
         } catch (error) {
           console.error('Error loading existing conversation:', error);
           onError?.('Failed to load conversation data');
         }
-      } else {
-        // Start new streaming session
-        const sessionId = `session_${Date.now()}`;
-        const predefinedTasks = [
-          {
-            title: 'Requirements Analysis',
-            agent: 'Requirements Analyst',
-            status: 'pending' as const,
-            progress: 0,
-            estimatedTime: 15,
-            subtasks: [
+        return; // Don't set up streaming service for viewing mode
+      }
+
+      // Start new streaming session (only if not in viewing mode)
+      const sessionId = `session_${Date.now()}`;
+      const predefinedTasks = [
+        {
+          title: 'Requirements Analysis',
+          agent: 'Requirements Analyst',
+          status: 'pending' as const,
+          progress: 0,
+          estimatedTime: 15,
+          subtasks: [
               { id: 'analyze_domain', title: 'Analyzing domain context', status: 'pending' as const, progress: 0 },
               { id: 'extract_requirements', title: 'Extracting requirements', status: 'pending' as const, progress: 0 },
               { id: 'classify_complexity', title: 'Classifying complexity', status: 'pending' as const, progress: 0 }
@@ -253,21 +263,28 @@ export function StreamingInterface({
       setInsights(prev => [...prev, data]);
     };
 
-    // Subscribe to events
-    streamingService.on('session_initialized', handleSessionInitialized);
-    streamingService.on('task_started', handleTaskStarted);
-    streamingService.on('task_progress', handleTaskProgress);
-    streamingService.on('character_streamed', handleCharacterStreamed);
-    streamingService.on('task_completed', handleTaskCompleted);
-    streamingService.on('session_completed', handleSessionCompleted);
-    streamingService.on('streaming_paused', handleStreamingPaused);
-    streamingService.on('streaming_resumed', handleStreamingResumed);
-    streamingService.on('insight_message', handleInsightMessage);
+    if (!isViewingMode) {
+      // Subscribe to events only for new streaming sessions
+      streamingService.on('session_initialized', handleSessionInitialized);
+      streamingService.on('task_started', handleTaskStarted);
+      streamingService.on('task_progress', handleTaskProgress);
+      streamingService.on('character_streamed', handleCharacterStreamed);
+      streamingService.on('task_completed', handleTaskCompleted);
+      streamingService.on('session_completed', handleSessionCompleted);
+      streamingService.on('streaming_paused', handleStreamingPaused);
+      streamingService.on('streaming_resumed', handleStreamingResumed);
+      streamingService.on('insight_message', handleInsightMessage);
+    }
+
+    // Initialize the interface
+    initializeInterface();
 
     return () => {
-      streamingService.removeAllListeners();
+      if (!isViewingMode) {
+        streamingService.removeAllListeners();
+      }
     };
-  }, [isViewingMode, tasks, taskContent, onComplete]);
+  }, [isViewingMode, existingConversation]);
 
   // Auto-scroll insights to bottom
   useEffect(() => {
