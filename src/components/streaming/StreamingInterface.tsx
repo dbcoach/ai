@@ -14,6 +14,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { streamingService, StreamingTask, StreamChunk } from '../../services/streamingService';
+import { streamingDataCapture } from '../../services/streamingDataCapture';
 import { StreamingErrorBoundary } from './StreamingErrorBoundary';
 
 interface StreamingInterfaceProps {
@@ -22,6 +23,8 @@ interface StreamingInterfaceProps {
   onComplete?: (results: any) => void;
   onError?: (error: string) => void;
   className?: string;
+  isViewingMode?: boolean;
+  existingSessionId?: string;
 }
 
 export function StreamingInterface({ 
@@ -29,7 +32,9 @@ export function StreamingInterface({
   dbType, 
   onComplete, 
   onError, 
-  className = '' 
+  className = '',
+  isViewingMode = false,
+  existingSessionId
 }: StreamingInterfaceProps) {
   const [tasks, setTasks] = useState<StreamingTask[]>([]);
   const [activeTask, setActiveTask] = useState<StreamingTask | null>(null);
@@ -44,69 +49,128 @@ export function StreamingInterface({
   const cursorRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
   const insightsEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize streaming session
+  // Initialize streaming session or load existing data
   useEffect(() => {
-    const sessionId = `session_${Date.now()}`;
-    const predefinedTasks = [
-      {
-        title: 'Requirements Analysis',
-        agent: 'Requirements Analyst',
-        status: 'pending' as const,
-        progress: 0,
-        estimatedTime: 15,
-        subtasks: [
-          { id: 'analyze_domain', title: 'Analyzing domain context', status: 'pending' as const, progress: 0 },
-          { id: 'extract_requirements', title: 'Extracting requirements', status: 'pending' as const, progress: 0 },
-          { id: 'classify_complexity', title: 'Classifying complexity', status: 'pending' as const, progress: 0 }
-        ]
-      },
-      {
-        title: 'Schema Design',
-        agent: 'Schema Architect',
-        status: 'pending' as const,
-        progress: 0,
-        estimatedTime: 25,
-        subtasks: [
-          { id: 'design_entities', title: 'Designing core entities', status: 'pending' as const, progress: 0 },
-          { id: 'map_relationships', title: 'Mapping relationships', status: 'pending' as const, progress: 0 },
-          { id: 'optimize_structure', title: 'Optimizing structure', status: 'pending' as const, progress: 0 }
-        ]
-      },
-      {
-        title: 'Implementation Package',
-        agent: 'Implementation Specialist',
-        status: 'pending' as const,
-        progress: 0,
-        estimatedTime: 20,
-        subtasks: [
-          { id: 'generate_sql', title: 'Generating SQL scripts', status: 'pending' as const, progress: 0 },
-          { id: 'create_samples', title: 'Creating sample data', status: 'pending' as const, progress: 0 },
-          { id: 'setup_apis', title: 'Setting up API examples', status: 'pending' as const, progress: 0 }
-        ]
-      },
-      {
-        title: 'Quality Assurance',
-        agent: 'Quality Assurance',
-        status: 'pending' as const,
-        progress: 0,
-        estimatedTime: 10,
-        subtasks: [
-          { id: 'validate_design', title: 'Validating design', status: 'pending' as const, progress: 0 },
-          { id: 'performance_review', title: 'Performance review', status: 'pending' as const, progress: 0 },
-          { id: 'security_audit', title: 'Security audit', status: 'pending' as const, progress: 0 }
-        ]
-      }
-    ];
+    const initializeInterface = async () => {
+      if (isViewingMode && existingSessionId) {
+        // Load existing conversation data
+        try {
+          await streamingDataCapture.initialize();
+          const chunks = await streamingDataCapture.getSessionChunks(existingSessionId);
+          const insights = await streamingDataCapture.getSessionInsights(existingSessionId);
+          
+          // Create tasks from existing data
+          const taskMap = new Map<string, StreamingTask>();
+          chunks.forEach(chunk => {
+            if (!taskMap.has(chunk.task_id)) {
+              taskMap.set(chunk.task_id, {
+                id: chunk.task_id,
+                title: chunk.task_title,
+                agent: chunk.agent_name,
+                status: 'completed' as const,
+                progress: 100,
+                estimatedTime: 0,
+                subtasks: []
+              });
+            }
+          });
+          
+          const existingTasks = Array.from(taskMap.values());
+          setTasks(existingTasks);
+          setTotalProgress(100);
+          setIsPlaying(false);
+          
+          // Load content for each task
+          const contentMap = new Map<string, string>();
+          chunks.forEach(chunk => {
+            const existing = contentMap.get(chunk.task_id) || '';
+            contentMap.set(chunk.task_id, existing + chunk.content);
+          });
+          setTaskContent(contentMap);
+          
+          // Load insights
+          const formattedInsights = insights.map(insight => ({
+            agent: insight.agent_name,
+            message: insight.content,
+            timestamp: new Date(insight.created_at)
+          }));
+          setInsights(formattedInsights);
+          
+        } catch (error) {
+          console.error('Error loading existing conversation:', error);
+          onError?.('Failed to load conversation data');
+        }
+      } else {
+        // Start new streaming session
+        const sessionId = `session_${Date.now()}`;
+        const predefinedTasks = [
+          {
+            title: 'Requirements Analysis',
+            agent: 'Requirements Analyst',
+            status: 'pending' as const,
+            progress: 0,
+            estimatedTime: 15,
+            subtasks: [
+              { id: 'analyze_domain', title: 'Analyzing domain context', status: 'pending' as const, progress: 0 },
+              { id: 'extract_requirements', title: 'Extracting requirements', status: 'pending' as const, progress: 0 },
+              { id: 'classify_complexity', title: 'Classifying complexity', status: 'pending' as const, progress: 0 }
+            ]
+          },
+          {
+            title: 'Schema Design',
+            agent: 'Schema Architect',
+            status: 'pending' as const,
+            progress: 0,
+            estimatedTime: 25,
+            subtasks: [
+              { id: 'design_entities', title: 'Designing core entities', status: 'pending' as const, progress: 0 },
+              { id: 'map_relationships', title: 'Mapping relationships', status: 'pending' as const, progress: 0 },
+              { id: 'optimize_structure', title: 'Optimizing structure', status: 'pending' as const, progress: 0 }
+            ]
+          },
+          {
+            title: 'Implementation Package',
+            agent: 'Implementation Specialist',
+            status: 'pending' as const,
+            progress: 0,
+            estimatedTime: 20,
+            subtasks: [
+              { id: 'generate_sql', title: 'Generating SQL scripts', status: 'pending' as const, progress: 0 },
+              { id: 'create_samples', title: 'Creating sample data', status: 'pending' as const, progress: 0 },
+              { id: 'setup_apis', title: 'Setting up API examples', status: 'pending' as const, progress: 0 }
+            ]
+          },
+          {
+            title: 'Quality Assurance',
+            agent: 'Quality Assurance',
+            status: 'pending' as const,
+            progress: 0,
+            estimatedTime: 10,
+            subtasks: [
+              { id: 'validate_design', title: 'Validating design', status: 'pending' as const, progress: 0 },
+              { id: 'performance_review', title: 'Performance review', status: 'pending' as const, progress: 0 },
+              { id: 'security_audit', title: 'Security audit', status: 'pending' as const, progress: 0 }
+            ]
+          }
+        ];
 
-    streamingService.initializeSession(sessionId, predefinedTasks);
+        streamingService.initializeSession(sessionId, predefinedTasks);
+      }
+    };
+    
+    initializeInterface();
     
     return () => {
-      streamingService.destroy();
+      if (!isViewingMode) {
+        streamingService.destroy();
+      }
     };
-  }, []);
+  }, [isViewingMode, existingSessionId, onError]);
 
-  // Event listeners for streaming service
+  // Event listeners for streaming service (only for new sessions)
   useEffect(() => {
+    if (isViewingMode) return; // Skip event listeners in viewing mode
+    
     const handleSessionInitialized = (data: { tasks: StreamingTask[] }) => {
       setTasks(data.tasks);
     };
@@ -216,7 +280,7 @@ export function StreamingInterface({
     return () => {
       streamingService.removeAllListeners();
     };
-  }, [tasks, taskContent, onComplete]);
+  }, [isViewingMode, tasks, taskContent, onComplete]);
 
   // Auto-scroll insights to bottom
   useEffect(() => {
@@ -225,8 +289,10 @@ export function StreamingInterface({
     }
   }, [insights]);
 
-  // Update progress and time estimates
+  // Update progress and time estimates (only for new sessions)
   useEffect(() => {
+    if (isViewingMode) return; // Skip progress updates in viewing mode
+    
     const interval = setInterval(() => {
       const status = streamingService.getSessionStatus();
       setTotalProgress(status.totalProgress);
@@ -234,7 +300,7 @@ export function StreamingInterface({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isViewingMode]);
 
   const handlePlayPause = useCallback(() => {
     if (isPlaying) {
@@ -285,13 +351,13 @@ export function StreamingInterface({
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-slate-700/50 bg-slate-800/30">
         <div className="flex items-center gap-4">
-          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+          <div className={`w-3 h-3 rounded-full ${isViewingMode ? 'bg-blue-400' : 'bg-green-400 animate-pulse'}`}></div>
           <div>
             <h2 className="text-xl font-semibold text-white">
-              DB.Coach Live Generation
+              {isViewingMode ? 'Database Generation Results' : 'DB.Coach Live Generation'}
             </h2>
             <p className="text-slate-400 text-sm">
-              Creating {dbType} database: "{prompt.substring(0, 50)}..."
+              {isViewingMode ? `Viewing ${dbType} database generation` : `Creating ${dbType} database`}: "{prompt.substring(0, 50)}..."
             </p>
           </div>
         </div>
@@ -483,43 +549,55 @@ export function StreamingInterface({
           <div className="border-t border-slate-700/50 bg-slate-800/30 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <button
-                  onClick={handlePlayPause}
-                  className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg transition-all duration-200"
-                >
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                </button>
-                
-                <button
-                  onClick={handleStop}
-                  className="flex items-center justify-center w-10 h-10 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
-                >
-                  <Square className="w-5 h-5" />
-                </button>
+                {!isViewingMode && (
+                  <>
+                    <button
+                      onClick={handlePlayPause}
+                      className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg transition-all duration-200"
+                    >
+                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    </button>
+                    
+                    <button
+                      onClick={handleStop}
+                      className="flex items-center justify-center w-10 h-10 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+                    >
+                      <Square className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
                 
                 <button
                   onClick={() => onComplete?.(Array.from(taskContent.entries()))}
                   className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                 >
                   <Download className="w-4 h-4" />
-                  Export Draft
+                  {isViewingMode ? 'Export Results' : 'Export Draft'}
                 </button>
               </div>
               
-              <div className="flex items-center gap-3">
-                <label className="text-sm text-slate-300">Speed:</label>
-                <input
-                  type="range"
-                  min="10"
-                  max="100"
-                  value={streamingSpeed}
-                  onChange={(e) => handleSpeedChange(Number(e.target.value))}
-                  className="w-24 accent-purple-500"
-                />
-                <span className="text-sm text-slate-400 font-mono w-8">
-                  {(streamingSpeed / 40).toFixed(1)}x
-                </span>
-              </div>
+              {!isViewingMode && (
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-slate-300">Speed:</label>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    value={streamingSpeed}
+                    onChange={(e) => handleSpeedChange(Number(e.target.value))}
+                    className="w-24 accent-purple-500"
+                  />
+                  <span className="text-sm text-slate-400 font-mono w-8">
+                    {(streamingSpeed / 40).toFixed(1)}x
+                  </span>
+                </div>
+              )}
+              
+              {isViewingMode && (
+                <div className="text-sm text-slate-400">
+                  ✅ Generation completed
+                </div>
+              )}
             </div>
           </div>
         </div>

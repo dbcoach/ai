@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Home, 
@@ -8,21 +8,47 @@ import {
   Database
 } from 'lucide-react';
 import { ConversationHistory } from './ConversationHistory';
-import { SavedStreamingCanvas } from './SavedStreamingCanvas';
+import { StreamingInterface } from './StreamingInterface';
+import { streamingDataCapture, StreamingData } from '../../services/streamingDataCapture';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../auth/ProtectedRoute';
 
 export function ConversationInterface() {
   const { user } = useAuth();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<StreamingData | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedSessionId) {
+      loadConversationData(selectedSessionId);
+    } else {
+      setSelectedConversation(null);
+    }
+  }, [selectedSessionId]);
+
+  const loadConversationData = async (sessionId: string) => {
+    try {
+      setLoading(true);
+      await streamingDataCapture.initialize();
+      const sessions = await streamingDataCapture.getSavedSessions(user?.id || '');
+      const conversation = sessions.find(s => s.id === sessionId);
+      setSelectedConversation(conversation || null);
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      setSelectedConversation(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleNewGeneration = () => {
     // Navigate to streaming page for new generation
     window.location.href = '/';
   };
 
-  const handleExport = (format: 'json' | 'csv' | 'pdf') => {
-    console.log(`Exporting in ${format} format`);
+  const handleSelectConversation = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
   };
 
   return (
@@ -83,20 +109,58 @@ export function ConversationInterface() {
             {/* Conversation History Sidebar */}
             <div className="w-80 border-r border-slate-700/50 bg-slate-800/20 flex flex-col">
               <ConversationHistory 
-                onSelectConversation={setSelectedSessionId}
+                onSelectConversation={handleSelectConversation}
                 selectedSessionId={selectedSessionId}
               />
             </div>
 
-            {/* Canvas Viewer */}
+            {/* Streaming Interface Viewer */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              {selectedSessionId ? (
-                <SavedStreamingCanvas
-                  sessionId={selectedSessionId}
-                  onStartNewChat={handleNewGeneration}
-                  onExport={handleExport}
-                  className="h-full"
-                />
+              {selectedConversation ? (
+                <div className="h-full flex flex-col">
+                  {/* Conversation Header */}
+                  <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-lg font-semibold text-white mb-1">
+                          {selectedConversation.prompt}
+                        </h2>
+                        <div className="flex items-center gap-3 text-sm text-slate-400">
+                          <span>{selectedConversation.database_type}</span>
+                          <span>•</span>
+                          <span>{new Date(selectedConversation.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleNewGeneration}
+                        className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors text-sm"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>New Generation</span>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Streaming Interface */}
+                  <div className="flex-1 overflow-hidden">
+                    <StreamingInterface
+                      prompt={selectedConversation.prompt}
+                      dbType={selectedConversation.database_type}
+                      onComplete={() => {}}
+                      onError={() => {}}
+                      className="h-full"
+                      isViewingMode={true}
+                      existingSessionId={selectedConversation.id}
+                    />
+                  </div>
+                </div>
+              ) : loading ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-400">Loading conversation...</p>
+                  </div>
+                </div>
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center max-w-md">
@@ -105,7 +169,7 @@ export function ConversationInterface() {
                       Select a Database Generation
                     </h3>
                     <p className="text-slate-500 mb-6">
-                      Choose a conversation from the sidebar to view its streaming canvas and results, or start a new generation.
+                      Choose a conversation from the sidebar to view its streaming interface and results, or start a new generation.
                     </p>
                     <button
                       onClick={handleNewGeneration}

@@ -101,18 +101,41 @@ export function ConversationHistory({
   };
 
   const generateConversationTitle = (prompt: string, dbType: string) => {
-    // Extract key concepts from prompt to create a meaningful title
-    const words = prompt.toLowerCase().split(' ');
-    const keyWords = words.filter(word => 
-      word.length > 3 && 
-      !['database', 'create', 'build', 'design', 'make', 'system'].includes(word)
-    ).slice(0, 3);
+    // Create a meaningful title by extracting the main concept from the prompt
+    const cleanPrompt = prompt.replace(/[^\w\s]/g, '').toLowerCase();
     
-    if (keyWords.length > 0) {
-      return keyWords.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') + ` (${dbType})`;
+    // Look for key entities/concepts
+    const concepts = [
+      'blog', 'ecommerce', 'shop', 'store', 'user', 'post', 'comment', 'article',
+      'inventory', 'product', 'order', 'customer', 'account', 'profile', 'message',
+      'chat', 'forum', 'social', 'media', 'library', 'book', 'school', 'student',
+      'course', 'lesson', 'task', 'project', 'team', 'company', 'employee',
+      'restaurant', 'food', 'recipe', 'menu', 'hotel', 'booking', 'reservation',
+      'ticket', 'event', 'calendar', 'schedule', 'appointment', 'medical', 'patient',
+      'hospital', 'clinic', 'finance', 'payment', 'transaction', 'bank', 'portfolio'
+    ];
+    
+    const foundConcept = concepts.find(concept => cleanPrompt.includes(concept));
+    
+    if (foundConcept) {
+      const capitalized = foundConcept.charAt(0).toUpperCase() + foundConcept.slice(1);
+      return `${capitalized} ${dbType} Database`;
     }
     
-    return `${dbType} Database`;
+    // Fallback: take first few meaningful words
+    const words = cleanPrompt.split(' ').filter(word => 
+      word.length > 3 && 
+      !['database', 'create', 'build', 'design', 'make', 'system', 'table', 'need', 'want', 'like', 'would'].includes(word)
+    );
+    
+    if (words.length > 0) {
+      const title = words.slice(0, 2)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      return `${title} ${dbType}`;
+    }
+    
+    return `${dbType} Database Design`;
   };
 
   if (loading) {
