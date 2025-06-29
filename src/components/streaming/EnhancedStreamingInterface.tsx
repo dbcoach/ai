@@ -97,6 +97,12 @@ export function EnhancedStreamingInterface({
     if (!existingConversation) return;
     
     console.log('🔍 Loading existing conversation in enhanced viewing mode:', existingConversation);
+    console.log('📊 Existing conversation content summary:', {
+      tasksCount: existingConversation.tasks?.length || 0,
+      insightsCount: existingConversation.insights?.length || 0,
+      contentKeys: Object.keys(existingConversation.generatedContent || {}),
+      totalContentLength: Object.values(existingConversation.generatedContent || {}).join('').length
+    });
     
     // Load existing tasks
     setTasks(existingConversation.tasks.map(task => ({
@@ -338,8 +344,14 @@ export function EnhancedStreamingInterface({
         }
       };
 
-      // Save to localStorage
+      // Save to Supabase
       console.log('🔵 About to save conversation:', conversation);
+      console.log('📊 Conversation content summary:', {
+        tasksCount: conversation.tasks.length,
+        insightsCount: conversation.insights.length,
+        contentKeys: Object.keys(conversation.generatedContent),
+        totalContentLength: Object.values(conversation.generatedContent).join('').length
+      });
       await conversationStorage.saveConversation(conversation);
       console.log('✅ Conversation saved successfully!');
 
