@@ -5,11 +5,14 @@ import {
   Settings, 
   Plus,
   MessageSquare,
-  Database
+  Database,
+  Bot,
+  Monitor
 } from 'lucide-react';
 import { ConversationHistory } from './ConversationHistory';
 import { EnhancedStreamingInterface } from './EnhancedStreamingInterface';
 import { StreamingErrorBoundary } from './StreamingErrorBoundary';
+import { ConversationChat } from '../chat/ConversationChat';
 import { conversationStorage, SavedConversation } from '../../services/conversationStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../auth/ProtectedRoute';
@@ -19,6 +22,7 @@ export function ConversationInterface() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<SavedConversation | null>(null);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'generation' | 'chat'>('generation');
 
   useEffect(() => {
     if (selectedSessionId) {
@@ -121,7 +125,7 @@ export function ConversationInterface() {
                 <div className="h-full flex flex-col">
                   {/* Conversation Header */}
                   <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
                         <h2 className="text-lg font-semibold text-white mb-1">
                           {selectedConversation.prompt}
@@ -140,25 +144,60 @@ export function ConversationInterface() {
                         <span>New Generation</span>
                       </button>
                     </div>
+                    
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setViewMode('generation')}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                          viewMode === 'generation'
+                            ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
+                            : 'bg-slate-700/50 text-slate-400 hover:text-slate-300 hover:bg-slate-600/50'
+                        }`}
+                      >
+                        <Monitor className="w-4 h-4" />
+                        Generation View
+                      </button>
+                      <button
+                        onClick={() => setViewMode('chat')}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                          viewMode === 'chat'
+                            ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
+                            : 'bg-slate-700/50 text-slate-400 hover:text-slate-300 hover:bg-slate-600/50'
+                        }`}
+                      >
+                        <Bot className="w-4 h-4" />
+                        Chat with AI
+                      </button>
+                    </div>
                   </div>
                   
-                  {/* Streaming Interface */}
+                  {/* Content Area */}
                   <div className="flex-1 overflow-hidden">
-                    <StreamingErrorBoundary>
-                      <div className="h-full">
-                        <EnhancedStreamingInterface
-                          prompt={selectedConversation.prompt}
-                          dbType={selectedConversation.dbType}
-                          onComplete={() => {}}
-                          onError={(error) => {
-                            console.error('❌ EnhancedStreamingInterface error:', error);
-                          }}
+                    {viewMode === 'generation' ? (
+                      <StreamingErrorBoundary>
+                        <div className="h-full">
+                          <EnhancedStreamingInterface
+                            prompt={selectedConversation.prompt}
+                            dbType={selectedConversation.dbType}
+                            onComplete={() => {}}
+                            onError={(error) => {
+                              console.error('❌ EnhancedStreamingInterface error:', error);
+                            }}
+                            className="h-full"
+                            isViewingMode={true}
+                            existingConversation={selectedConversation}
+                          />
+                        </div>
+                      </StreamingErrorBoundary>
+                    ) : (
+                      <div className="h-full p-4">
+                        <ConversationChat 
+                          conversation={selectedConversation}
                           className="h-full"
-                          isViewingMode={true}
-                          existingConversation={selectedConversation}
                         />
                       </div>
-                    </StreamingErrorBoundary>
+                    )}
                   </div>
                 </div>
               ) : loading ? (
