@@ -283,65 +283,97 @@ class StreamingDataCaptureService {
       }
 
       session.endTime = new Date();
+      
+      // Mark session as completed first (even if project creation fails)
+      session.streamingData.status = 'completed';
+      session.streamingData.completion_data = completionData;
+      session.streamingData.updated_at = new Date().toISOString();
 
-      // Create database project
-      const projectTitle = this.generateProjectTitle(session.streamingData.prompt, session.streamingData.database_type);
-      const project = await databaseProjectsService.createProject(session.streamingData.user_id, {
-        database_name: projectTitle,
-        database_type: session.streamingData.database_type as any,
-        description: session.streamingData.prompt,
-        metadata: {
-          streaming_session_id: sessionId,
-          generation_mode: 'streaming',
-          total_chunks: session.chunks.length,
-          total_insights: session.insights.length,
-          duration_ms: session.endTime.getTime() - session.startTime.getTime(),
-          completion_data: completionData,
-          generated_at: new Date().toISOString()
-        }
-      });
+      let projectId: string;
 
-      // Create session within project
-      const dbSession = await databaseProjectsService.createSession({
-        project_id: project.id,
-        session_name: "Live Streaming Generation",
-        description: `Database generated via streaming interface`
-      });
-
-      // Convert chunks to queries
-      for (const chunk of session.chunks) {
-        await databaseProjectsService.createQuery({
-          session_id: dbSession.id,
-          project_id: project.id,
-          query_text: `${chunk.task_title} (${chunk.agent_name})`,
-          query_type: chunk.content_type === 'query' ? 'OTHER' : 'OTHER',
-          description: chunk.task_title,
-          results_data: {
-            content: chunk.content,
-            taskId: chunk.task_id,
-            agent: chunk.agent_name,
-            contentType: chunk.content_type,
-            chunkIndex: chunk.chunk_index,
-            metadata: chunk.metadata
-          },
-          results_format: 'json',
-          success: true
+      try {
+        // Create database project
+        const projectTitle = this.generateProjectTitle(session.streamingData.prompt, session.streamingData.database_type);
+        const project = await databaseProjectsService.createProject(session.streamingData.user_id, {
+          database_name: projectTitle,
+          database_type: session.streamingData.database_type as any,
+          description: session.streamingData.prompt,
+          metadata: {
+            streaming_session_id: sessionId,
+            generation_mode: 'streaming',
+            total_chunks: session.chunks.length,
+            total_insights: session.insights.length,
+            duration_ms: session.endTime.getTime() - session.startTime.getTime(),
+            completion_data: completionData,
+            generated_at: new Date().toISOString()
+          }
         });
+
+        projectId = project.id;
+        session.streamingData.project_id = projectId;
+
+        // Create session within project
+        const dbSession = await databaseProjectsService.createSession({
+          project_id: project.id,
+          session_name: "Live Streaming Generation",
+          description: `Database generated via streaming interface`
+        });
+
+        // Convert chunks to queries
+        for (const chunk of session.chunks) {
+          await databaseProjectsService.createQuery({
+            session_id: dbSession.id,
+            project_id: project.id,
+            query_text: `${chunk.task_title} (${chunk.agent_name})`,
+            query_type: chunk.content_type === 'query' ? 'OTHER' : 'OTHER',
+            description: chunk.task_title,
+            results_data: {
+              content: chunk.content,
+              taskId: chunk.task_id,
+              agent: chunk.agent_name,
+              contentType: chunk.content_type,
+              chunkIndex: chunk.chunk_index,
+              metadata: chunk.metadata
+            },
+            results_format: 'json',
+            success: true
+          });
+        }
+      } catch (projectError) {
+        console.warn('Failed to create database project, but streaming session is still valid:', projectError);
+        // Generate a fallback project ID for the conversation interface
+        projectId = `stream_project_${sessionId}`;
+        session.streamingData.project_id = projectId;
       }
 
       // Update streaming session status
-      await supabase
-        .from('streaming_sessions')
-        .update({
-          status: 'completed',
-          project_id: project.id,
-          completion_data: completionData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
+      try {
+        await supabase
+          .from('streaming_sessions')
+          .update({
+            status: 'completed',
+            project_id: project.id,
+            completion_data: completionData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', sessionId);
+      } catch (dbError) {
+        console.warn('Failed to update session status in database:', dbError);
+        // Update in-memory session status
+        session.streamingData.status = 'completed';
+        session.streamingData.project_id = project.id;
+        session.streamingData.completion_data = completionData;
+        session.streamingData.updated_at = new Date().toISOString();
+      }
 
-      // Clean up in-memory session
-      this.activeSessions.delete(sessionId);
+      // Don't delete in-memory session if database is not available
+      // Keep it for conversation list access
+      const dbAvailable = await this.isDatabaseAvailable();
+      if (dbAvailable) {
+        this.activeSessions.delete(sessionId);
+      } else {
+        console.log(`Keeping session ${sessionId} in memory for conversation list access`);
+      }
 
       console.log(`Completed streaming capture session: ${sessionId}, created project: ${project.id}`);
       return project.id;
@@ -374,7 +406,11 @@ class StreamingDataCaptureService {
         // Could implement more sophisticated rollback logic here
       }
 
-      this.activeSessions.delete(sessionId);
+      // Only delete if database is available, otherwise keep for conversation list
+      const dbAvailable = await this.isDatabaseAvailable();
+      if (dbAvailable) {
+        this.activeSessions.delete(sessionId);
+      }
     } catch (rollbackError) {
       console.error('Error during rollback:', rollbackError);
     }
@@ -574,6 +610,21 @@ class StreamingDataCaptureService {
     } catch (error) {
       console.warn('Error getting session insights:', error);
       return [];
+    }
+  }
+
+  /**
+   * Check if database is available
+   */
+  private async isDatabaseAvailable(): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('streaming_sessions')
+        .select('id')
+        .limit(1);
+      return !error;
+    } catch (error) {
+      return false;
     }
   }
 

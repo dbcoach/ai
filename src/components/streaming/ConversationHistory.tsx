@@ -11,7 +11,8 @@ import {
   Zap,
   CheckCircle,
   AlertTriangle,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { streamingDataCapture, StreamingData } from '../../services/streamingDataCapture';
 import { useAuth } from '../../contexts/AuthContext';
@@ -38,11 +39,24 @@ export function ConversationHistory({
     }
   }, [user]);
 
+  // Auto-refresh conversations every 30 seconds to pick up new sessions
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing conversations...');
+      loadConversations();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const loadConversations = async () => {
     try {
       setLoading(true);
       await streamingDataCapture.initialize();
       const sessions = await streamingDataCapture.getSavedSessions(user?.id || '');
+      console.log('Loaded conversations:', sessions.length, sessions);
       setConversations(sessions);
     } catch (error) {
       console.error('Error loading conversations:', error);
@@ -153,7 +167,17 @@ export function ConversationHistory({
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
-        <h2 className="text-lg font-semibold text-white mb-4">Database Generations</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-white">Database Generations</h2>
+          <button
+            onClick={loadConversations}
+            disabled={loading}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50"
+            title="Refresh conversations"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
         
         {/* Search */}
         <div className="relative">
