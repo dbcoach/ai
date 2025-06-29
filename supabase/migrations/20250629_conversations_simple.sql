@@ -1,7 +1,4 @@
--- Enable trigram extension for search (must be first)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
--- Create conversations table for ChatGPT-like conversation history
+-- Create conversations table for ChatGPT-like conversation history (simplified version)
 CREATE TABLE IF NOT EXISTS conversations (
   id TEXT PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -17,11 +14,11 @@ CREATE TABLE IF NOT EXISTS conversations (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- Create indexes for performance
+-- Create basic indexes for performance
 CREATE INDEX IF NOT EXISTS conversations_user_id_idx ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS conversations_created_at_idx ON conversations(created_at DESC);
-CREATE INDEX IF NOT EXISTS conversations_title_idx ON conversations USING gin(title gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS conversations_prompt_idx ON conversations USING gin(prompt gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS conversations_title_idx ON conversations(title);
+CREATE INDEX IF NOT EXISTS conversations_db_type_idx ON conversations(db_type);
 
 -- Row Level Security (RLS)
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
