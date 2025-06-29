@@ -67,11 +67,35 @@ class StreamingDataCaptureService {
   }
 
   private async createTables() {
-    // Create streaming_sessions table
-    const { error: sessionsError } = await supabase.rpc('create_streaming_tables');
-    if (sessionsError && !sessionsError.message.includes('already exists')) {
-      console.error('Error creating streaming tables:', sessionsError);
+    try {
+      // Try to call the RPC function first
+      const { error: rpcError } = await supabase.rpc('create_streaming_tables');
+      if (!rpcError) {
+        console.log('Streaming tables verified via RPC');
+        return;
+      }
+    } catch (error) {
+      console.log('RPC function not available, checking tables directly');
     }
+
+    // Check if tables exist by trying to query them
+    try {
+      const { error: testError } = await supabase
+        .from('streaming_sessions')
+        .select('id')
+        .limit(1);
+      
+      if (!testError) {
+        console.log('Streaming tables already exist');
+        return;
+      }
+    } catch (error) {
+      console.log('Tables do not exist, will use fallback storage');
+    }
+
+    // If we get here, tables don't exist
+    console.warn('Streaming tables not found. Data will be stored in memory only.');
+    console.warn('To persist data, please run the streaming migration.');
   }
 
   /**
@@ -82,26 +106,45 @@ class StreamingDataCaptureService {
       const sessionId = `stream_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const now = new Date().toISOString();
 
-      // Create streaming session record
-      const { data: streamingData, error } = await supabase
-        .from('streaming_sessions')
-        .insert({
+      let streamingData: StreamingData;
+
+      // Try to create streaming session record in database
+      try {
+        const { data, error } = await supabase
+          .from('streaming_sessions')
+          .insert({
+            id: sessionId,
+            user_id: userId,
+            prompt,
+            database_type: databaseType,
+            status: 'initializing',
+            created_at: now,
+            updated_at: now
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        streamingData = data as StreamingData;
+        console.log(`Created database session: ${sessionId}`);
+      } catch (dbError) {
+        // Fallback: create in-memory only session
+        console.warn('Database not available, using in-memory session:', dbError);
+        streamingData = {
           id: sessionId,
           user_id: userId,
+          session_id: sessionId,
           prompt,
           database_type: databaseType,
           status: 'initializing',
           created_at: now,
           updated_at: now
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+        };
+      }
 
       // Initialize in-memory session
       const session: CapturedStreamingSession = {
-        streamingData: streamingData as StreamingData,
+        streamingData,
         chunks: [],
         insights: [],
         totalChunks: 0,
@@ -153,12 +196,16 @@ class StreamingDataCaptureService {
         metadata
       };
 
-      // Save to database atomically
-      const { error } = await supabase
-        .from('streaming_chunks')
-        .insert(chunk);
+      // Try to save to database
+      try {
+        const { error } = await supabase
+          .from('streaming_chunks')
+          .insert(chunk);
 
-      if (error) throw error;
+        if (error) throw error;
+      } catch (dbError) {
+        console.warn('Failed to save chunk to database, keeping in memory only:', dbError);
+      }
 
       // Update in-memory session
       session.chunks.push(chunk);
@@ -204,12 +251,16 @@ class StreamingDataCaptureService {
         metadata
       };
 
-      // Save to database
-      const { error } = await supabase
-        .from('streaming_insights')
-        .insert(insight);
+      // Try to save to database
+      try {
+        const { error } = await supabase
+          .from('streaming_insights')
+          .insert(insight);
 
-      if (error) throw error;
+        if (error) throw error;
+      } catch (dbError) {
+        console.warn('Failed to save insight to database, keeping in memory only:', dbError);
+      }
 
       // Update in-memory session
       session.insights.push(insight);
@@ -333,13 +384,24 @@ class StreamingDataCaptureService {
    * Update session status
    */
   private async updateSessionStatus(sessionId: string, status: StreamingData['status']): Promise<void> {
-    await supabase
-      .from('streaming_sessions')
-      .update({
-        status,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', sessionId);
+    try {
+      await supabase
+        .from('streaming_sessions')
+        .update({
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId);
+    } catch (error) {
+      console.warn('Failed to update session status in database:', error);
+      
+      // Update in-memory session status
+      const session = this.activeSessions.get(sessionId);
+      if (session) {
+        session.streamingData.status = status;
+        session.streamingData.updated_at = new Date().toISOString();
+      }
+    }
   }
 
   /**
@@ -347,17 +409,46 @@ class StreamingDataCaptureService {
    */
   async getSavedSessions(userId: string): Promise<StreamingData[]> {
     try {
-      const { data, error } = await supabase
-        .from('streaming_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      let databaseSessions: StreamingData[] = [];
+      
+      // Try to get sessions from database
+      try {
+        const { data, error } = await supabase
+          .from('streaming_sessions')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data || [];
+        if (error) throw error;
+        databaseSessions = data || [];
+      } catch (dbError) {
+        console.warn('Cannot access streaming_sessions table:', dbError);
+      }
+
+      // Get in-memory sessions for this user
+      const inMemorySessions: StreamingData[] = [];
+      for (const [sessionId, session] of this.activeSessions.entries()) {
+        if (session.streamingData.user_id === userId) {
+          inMemorySessions.push(session.streamingData);
+        }
+      }
+
+      // Combine and sort by created_at
+      const allSessions = [...databaseSessions, ...inMemorySessions];
+      return allSessions.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     } catch (error) {
       console.error('Error getting saved sessions:', error);
-      throw error;
+      
+      // Fallback: return only in-memory sessions
+      const inMemorySessions: StreamingData[] = [];
+      for (const [sessionId, session] of this.activeSessions.entries()) {
+        if (session.streamingData.user_id === userId) {
+          inMemorySessions.push(session.streamingData);
+        }
+      }
+      return inMemorySessions;
     }
   }
 
@@ -432,6 +523,58 @@ class StreamingDataCaptureService {
     
     const firstWords = prompt.split(' ').slice(0, 3).join(' ');
     return `${firstWords} Database (${dbType})`;
+  }
+
+  /**
+   * Get chunks for a specific session
+   */
+  async getSessionChunks(sessionId: string): Promise<StreamingChunk[]> {
+    try {
+      // Check in-memory first
+      const inMemorySession = this.activeSessions.get(sessionId);
+      if (inMemorySession) {
+        return inMemorySession.chunks;
+      }
+
+      // Try database
+      const { data, error } = await supabase
+        .from('streaming_chunks')
+        .select('*')
+        .eq('streaming_session_id', sessionId)
+        .order('chunk_index', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.warn('Error getting session chunks:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get insights for a specific session
+   */
+  async getSessionInsights(sessionId: string): Promise<StreamingInsight[]> {
+    try {
+      // Check in-memory first
+      const inMemorySession = this.activeSessions.get(sessionId);
+      if (inMemorySession) {
+        return inMemorySession.insights;
+      }
+
+      // Try database
+      const { data, error } = await supabase
+        .from('streaming_insights')
+        .select('*')
+        .eq('streaming_session_id', sessionId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.warn('Error getting session insights:', error);
+      return [];
+    }
   }
 
   /**
