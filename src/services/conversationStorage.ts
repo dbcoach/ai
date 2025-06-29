@@ -454,7 +454,7 @@ export class ConversationMigration {
 import { supabase } from '../lib/supabase';
 
 // UNCOMMENT the line below after creating the conversations table in Supabase:
-// export const conversationStorage: ConversationStorage = new SupabaseConversations(supabase);
+export const conversationStorage: ConversationStorage = new SupabaseConversations(supabase);
 
 // Comment out this line after switching to Supabase:
-export const conversationStorage: ConversationStorage = new LocalStorageConversations();
+// export const conversationStorage: ConversationStorage = new LocalStorageConversations();
