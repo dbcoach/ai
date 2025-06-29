@@ -12,7 +12,6 @@ import {
   ArrowRight,
   Clock,
   Calendar,
-  History,
   MessageSquare
 } from 'lucide-react';
 import { EnhancedStreamingInterface } from './EnhancedStreamingInterface';
