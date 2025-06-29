@@ -156,6 +156,10 @@ export function UnifiedProjectWorkspace() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const dashboardChatContainerRef = useRef<HTMLDivElement>(null);
   const dashboardChatEndRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to track initialization and completion
+  const hasInitialized = useRef(false);
+  const generationCompleted = useRef(false);
 
   // Get generation parameters from URL
   const prompt = searchParams.get('prompt') || '';
@@ -166,10 +170,23 @@ export function UnifiedProjectWorkspace() {
   useEffect(() => {
     if (projectId && user) {
       loadProject();
-    } else if (prompt && user) {
+    } else if (prompt && user && !isGenerating && !hasInitialized.current && !generationCompleted.current) {
+      hasInitialized.current = true;
       initializeGeneration();
     }
   }, [projectId, prompt, user]);
+
+  // Track previous prompt to detect changes
+  const prevPromptRef = useRef(prompt);
+  
+  // Reset flags only when prompt actually changes
+  useEffect(() => {
+    if (prevPromptRef.current !== prompt) {
+      hasInitialized.current = false;
+      generationCompleted.current = false;
+      prevPromptRef.current = prompt;
+    }
+  }, [prompt]);
 
   const loadProject = async () => {
     if (!projectId || !user) return;
@@ -429,6 +446,7 @@ export function UnifiedProjectWorkspace() {
     } finally {
       setIsGenerating(false);
       setIsStreaming(false);
+      generationCompleted.current = true; // Mark generation as completed
     }
   }, [prompt, dbType, generationMode, startGeneration, autoSaveEnabled]);
 

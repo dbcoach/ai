@@ -9,7 +9,7 @@ import useGeneration from '../hooks/useGeneration';
 const LandingPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { startGeneration, isGenerating } = useGeneration();
+  const { isGenerating } = useGeneration();
   const [prompt, setPrompt] = useState('');
   const [dbType, setDbType] = useState('SQL');
   const [mode, setMode] = useState<DBCoachMode>('dbcoach');
