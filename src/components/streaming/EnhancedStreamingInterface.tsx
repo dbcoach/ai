@@ -223,29 +223,40 @@ export function EnhancedStreamingInterface({
     }
     
     let currentTaskIndex = 0;
+    const localContent = new Map<string, string>();
+    const localInsights: Array<{ agent: string; message: string; timestamp: Date }> = [...insights];
+    const localTasks = [...tasks];
 
     const processNextTask = async () => {
-      console.log(`🔄 Processing task ${currentTaskIndex}/${tasks.length}`);
-      if (currentTaskIndex >= tasks.length) {
+      console.log(`🔄 Processing task ${currentTaskIndex}/${localTasks.length}`);
+      if (currentTaskIndex >= localTasks.length) {
         console.log('✅ All tasks completed, finishing streaming');
-        await completeStreaming();
+        console.log('📊 Final data before save:', {
+          tasksCount: localTasks.length,
+          insightsCount: localInsights.length,
+          contentKeys: Array.from(localContent.keys()),
+          totalContentLength: Array.from(localContent.values()).join('').length
+        });
+        await completeStreaming(localTasks, localContent, localInsights);
         return;
       }
 
-      const task = tasks[currentTaskIndex];
+      const task = localTasks[currentTaskIndex];
       console.log(`🎯 Starting task: ${task.title}`);
       
       // Start task
       task.status = 'active';
       setActiveTask(task);
-      setTasks([...tasks]);
+      setTasks([...localTasks]);
 
       // Add insight about starting task
-      setInsights(prev => [...prev, {
+      const startInsight = {
         agent: task.agent,
         message: `Starting ${task.title.toLowerCase()}...`,
         timestamp: new Date()
-      }]);
+      };
+      localInsights.push(startInsight);
+      setInsights(prev => [...prev, startInsight]);
 
       // Generate content for this task
       const content = generateTaskContent(task, prompt, dbType);
@@ -259,10 +270,13 @@ export function EnhancedStreamingInterface({
           const newChars = content.substring(contentIndex, contentIndex + charsToAdd);
           contentIndex += charsToAdd;
 
+          // Update both local and state content
+          const currentContent = localContent.get(task.id) || '';
+          const updatedContent = currentContent + newChars;
+          localContent.set(task.id, updatedContent);
+          
           setTaskContent(prev => {
             const newMap = new Map(prev);
-            const currentContent = newMap.get(task.id) || '';
-            const updatedContent = currentContent + newChars;
             newMap.set(task.id, updatedContent);
             return newMap;
           });
@@ -270,7 +284,7 @@ export function EnhancedStreamingInterface({
           // Update progress
           const progress = Math.min(100, (contentIndex / content.length) * 100);
           task.progress = progress;
-          setTasks([...tasks]);
+          setTasks([...localTasks]);
 
           if (contentIndex < content.length) {
             setTimeout(streamContent, 1000 / 60); // 60 FPS
@@ -278,14 +292,16 @@ export function EnhancedStreamingInterface({
             // Task completed
             task.status = 'completed';
             task.progress = 100;
-            setTasks([...tasks]);
+            setTasks([...localTasks]);
 
             // Add completion insight
-            setInsights(prev => [...prev, {
+            const completionInsight = {
               agent: task.agent,
               message: `${task.title} completed successfully!`,
               timestamp: new Date()
-            }]);
+            };
+            localInsights.push(completionInsight);
+            setInsights(prev => [...prev, completionInsight]);
 
             currentTaskIndex++;
             setTimeout(() => processNextTask(), 1000);
@@ -302,7 +318,7 @@ export function EnhancedStreamingInterface({
     processNextTask();
   };
 
-  const completeStreaming = async () => {
+  const completeStreaming = async (finalTasks?: StreamingTask[], finalContent?: Map<string, string>, finalInsights?: Array<{ agent: string; message: string; timestamp: Date }>) => {
     // Don't save in viewing mode - already saved
     if (isViewingMode) return;
     
@@ -310,7 +326,12 @@ export function EnhancedStreamingInterface({
       setIsSaving(true);
       setSaveStatus('saving');
 
-      // Create conversation data for localStorage
+      // Use the passed parameters or current state as fallback
+      const tasksToSave = finalTasks || tasks;
+      const contentToSave = finalContent || taskContent;
+      const insightsToSave = finalInsights || insights;
+
+      // Create conversation data for Supabase
       const endTime = new Date();
       const title = ConversationTitleGenerator.generate(prompt, dbType);
       
@@ -319,13 +340,13 @@ export function EnhancedStreamingInterface({
         prompt,
         dbType,
         title,
-        generatedContent: Object.fromEntries(taskContent.entries()),
-        insights: insights.map(insight => ({
+        generatedContent: Object.fromEntries(contentToSave.entries()),
+        insights: insightsToSave.map(insight => ({
           agent: insight.agent,
           message: insight.message,
           timestamp: insight.timestamp.toISOString()
         })),
-        tasks: tasks.map(task => ({
+        tasks: tasksToSave.map(task => ({
           id: task.id,
           title: task.title,
           agent: task.agent,
@@ -338,8 +359,8 @@ export function EnhancedStreamingInterface({
         userId: user?.id,
         metadata: {
           duration: endTime.getTime() - startTime.getTime(),
-          totalChunks: Array.from(taskContent.values()).join('').length,
-          totalInsights: insights.length,
+          totalChunks: Array.from(contentToSave.values()).join('').length,
+          totalInsights: insightsToSave.length,
           mode
         }
       };
