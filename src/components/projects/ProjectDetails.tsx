@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DatabaseProject, DatabaseSession, databaseProjectsService } from '../../services/databaseProjectsService';
 import { SessionDetails } from './SessionDetails';
 import { CreateSessionModal } from './CreateSessionModal';
+import { StreamingResultsTab } from '../streaming/StreamingResultsTab';
 import { 
   ArrowLeft,
   Plus,
@@ -13,7 +14,8 @@ import {
   Edit,
   Clock,
   Home,
-  Settings
+  Settings,
+  Zap
 } from 'lucide-react';
 
 interface ProjectDetailsProps {
@@ -28,9 +30,15 @@ export function ProjectDetails({ project, onBack, onProjectDeleted }: ProjectDet
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState<'sessions' | 'streaming'>('sessions');
 
   useEffect(() => {
     loadSessions();
+    
+    // Auto-select streaming tab if this project has streaming data
+    if (project.metadata?.streaming_session_id) {
+      setActiveTab('streaming');
+    }
   }, [project.id]);
 
   const loadSessions = async () => {
@@ -195,23 +203,63 @@ export function ProjectDetails({ project, onBack, onProjectDeleted }: ProjectDet
           </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="mb-6 p-4 rounded-xl bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 shadow-xl">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Work Sessions</h2>
+        {/* Tab Navigation */}
+        <div className="mb-6 rounded-xl bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 shadow-xl overflow-hidden">
+          {/* Tab Headers */}
+          <div className="flex border-b border-slate-700/50">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
+              onClick={() => setActiveTab('sessions')}
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${
+                activeTab === 'sessions' 
+                  ? 'text-purple-300 border-purple-500 bg-slate-800/50' 
+                  : 'text-slate-400 border-transparent hover:text-slate-300 hover:bg-slate-800/30'
+              }`}
             >
-              <Plus className="h-4 w-4" />
-              <span>New Session</span>
+              <Activity className="w-4 h-4" />
+              Work Sessions
             </button>
+            
+            {project.metadata?.streaming_session_id && (
+              <button
+                onClick={() => setActiveTab('streaming')}
+                className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${
+                  activeTab === 'streaming' 
+                    ? 'text-purple-300 border-purple-500 bg-slate-800/50' 
+                    : 'text-slate-400 border-transparent hover:text-slate-300 hover:bg-slate-800/30'
+                }`}
+              >
+                <Zap className="w-4 h-4" />
+                Streaming Results
+              </button>
+            )}
           </div>
+          
+          {/* Action Bar */}
+          {activeTab === 'sessions' && (
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">Work Sessions</h2>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>New Session</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Sessions List */}
-        <div className="space-y-4">
-          {loading ? (
+        {/* Tab Content */}
+        {activeTab === 'streaming' ? (
+          <StreamingResultsTab 
+            project={project}
+            onExport={(format) => console.log(`Exporting ${format}`)}
+          />
+        ) : (
+          <div className="space-y-4">
+            {loading ? (
             [...Array(3)].map((_, i) => (
               <div
                 key={i}
@@ -279,7 +327,8 @@ export function ProjectDetails({ project, onBack, onProjectDeleted }: ProjectDet
               </div>
             ))
           )}
-        </div>
+          </div>
+        )}
 
         {/* Create Session Modal */}
         {showCreateModal && (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { Home, Settings, ArrowLeft, Zap } from 'lucide-react';
-import { StreamingInterface } from './StreamingInterface';
+import { EnhancedStreamingInterface } from './EnhancedStreamingInterface';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../auth/ProtectedRoute';
 import { databaseProjectsService } from '../../services/databaseProjectsService';
@@ -27,54 +27,19 @@ export function StreamingPage() {
     }
   }, [prompt, navigate]);
 
-  // Handle generation completion
-  const handleStreamingComplete = async (results: Array<[string, string]>) => {
-    if (!user) return;
-    
+  // Handle generation completion - now handles project ID from enhanced interface
+  const handleStreamingComplete = async (projectId: string) => {
     try {
       setIsCompleted(true);
       
-      // Auto-save to projects
-      const projectTitle = generateProjectTitle(prompt, dbType);
-      const project = await databaseProjectsService.createProject(user.id, {
-        database_name: projectTitle,
-        database_type: dbType as any,
-        description: prompt,
-        metadata: {
-          generation_mode: mode,
-          streaming_results: results,
-          generated_at: new Date().toISOString()
-        }
-      });
-
-      // Create session with streaming results
-      const session = await databaseProjectsService.createSession({
-        project_id: project.id,
-        session_name: "Live Generation Session",
-        description: `Database generated using streaming interface with ${mode} mode`
-      });
-
-      // Store streaming results as queries
-      for (const [taskId, content] of results) {
-        await databaseProjectsService.createQuery({
-          session_id: session.id,
-          project_id: project.id,
-          query_text: `Streaming Task: ${taskId}`,
-          query_type: 'OTHER',
-          results_data: { content, taskId },
-          results_format: 'json',
-          success: true
-        });
-      }
-
-      // Redirect to projects after short delay
+      // Redirect to projects after short delay to show the saved project
       setTimeout(() => {
         navigate('/projects', { replace: true });
       }, 3000);
       
     } catch (error) {
-      console.error('Failed to save streaming results:', error);
-      setError('Failed to save results. You can still export manually.');
+      console.error('Failed to handle completion:', error);
+      setError('Failed to complete generation process.');
     }
   };
 
@@ -188,14 +153,14 @@ export function StreamingPage() {
               <div className="mb-4 p-4 bg-green-900/50 border border-green-700/50 rounded-lg text-green-200 max-w-7xl mx-auto">
                 <div className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-green-400" />
-                  <span className="font-semibold">Generation Complete!</span>
-                  <span>Your database design has been saved to projects. Redirecting...</span>
+                  <span className="font-semibold">Streaming Complete!</span>
+                  <span>Your database design and streaming canvas have been saved. Redirecting...</span>
                 </div>
               </div>
             )}
 
             <div className="max-w-7xl mx-auto h-full">
-              <StreamingInterface
+              <EnhancedStreamingInterface
                 prompt={prompt}
                 dbType={dbType}
                 onComplete={handleStreamingComplete}
