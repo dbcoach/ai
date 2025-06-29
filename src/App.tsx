@@ -5,6 +5,7 @@ import { Settings } from './components/Settings';
 import { DatabaseProjectsPage } from './components/projects/DatabaseProjectsPage';
 import { StreamingPage } from './components/streaming/StreamingPage';
 import { LiveStreamingPage } from './components/streaming/LiveStreamingPage';
+import { StreamingCanvasPage } from './components/streaming/StreamingCanvasPage';
 import { UnifiedProjectWorkspace } from './components/projects/UnifiedProjectWorkspace';
 import { GenerationProvider } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -20,6 +21,7 @@ function AppContent() {
         <Route path="/projects/:projectId" element={<UnifiedProjectWorkspace />} />
         <Route path="/generate" element={<UnifiedProjectWorkspace />} />
         <Route path="/streaming" element={<UnifiedProjectWorkspace />} />
+        <Route path="/streaming-canvas" element={<StreamingCanvasPage />} />
         <Route path="/streaming-legacy" element={<LiveStreamingPage />} />
         <Route path="/streaming-old" element={<StreamingPage />} />
         <Route path="/settings/*" element={<Settings />} />

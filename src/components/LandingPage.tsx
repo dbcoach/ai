@@ -86,6 +86,13 @@ const LandingPage: React.FC = () => {
           {user && (
             <>
               <Link 
+                to="/streaming-canvas" 
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 hover:from-purple-600/30 hover:to-blue-600/30 text-purple-300 hover:text-purple-200 rounded-lg transition-colors backdrop-blur-sm border border-purple-500/30"
+              >
+                <Zap className="w-4 h-4" />
+                <span>Streaming Canvas</span>
+              </Link>
+              <Link 
                 to="/projects" 
                 className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700/50"
               >
