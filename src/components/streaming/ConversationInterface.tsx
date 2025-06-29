@@ -146,15 +146,6 @@ export function ConversationInterface() {
                   <div className="flex-1 overflow-hidden">
                     <StreamingErrorBoundary>
                       <div className="h-full">
-                        {/* Temporary debug info */}
-                        <div className="p-2 bg-yellow-900/20 border-b border-yellow-700/30 text-xs">
-                          <span className="text-yellow-300">Debug: </span>
-                          <span className="text-yellow-100">
-                            Tasks: {selectedConversation.tasks?.length || 0}, 
-                            Insights: {selectedConversation.insights?.length || 0}, 
-                            Content Keys: {Object.keys(selectedConversation.generatedContent || {}).length}
-                          </span>
-                        </div>
                         <EnhancedStreamingInterface
                           prompt={selectedConversation.prompt}
                           dbType={selectedConversation.dbType}

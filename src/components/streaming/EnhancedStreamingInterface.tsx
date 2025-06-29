@@ -366,12 +366,11 @@ export function EnhancedStreamingInterface({
       };
 
       // Save to Supabase
-      console.log('🔵 About to save conversation:', conversation);
-      console.log('📊 Conversation content summary:', {
+      console.log('💾 Saving conversation to Supabase:', {
+        title: conversation.title,
         tasksCount: conversation.tasks.length,
         insightsCount: conversation.insights.length,
-        contentKeys: Object.keys(conversation.generatedContent),
-        totalContentLength: Object.values(conversation.generatedContent).join('').length
+        contentLength: Object.values(conversation.generatedContent).join('').length
       });
       await conversationStorage.saveConversation(conversation);
       console.log('✅ Conversation saved successfully!');
