@@ -131,6 +131,7 @@ export function EnhancedStreamingInterface({
 
   const initializeStreamingSession = async () => {
     try {
+      console.log('🚀 Initializing streaming session - Mode:', mode, 'ViewingMode:', isViewingMode);
       // Add initial insight
       setInsights([{
         agent: 'DB.Coach',
@@ -195,8 +196,10 @@ export function EnhancedStreamingInterface({
       ];
 
       setTasks(predefinedTasks);
+      console.log('📋 Set predefined tasks:', predefinedTasks.length);
 
       // Start streaming simulation
+      console.log('🎬 Starting streaming simulation...');
       startStreamingSimulation(predefinedTasks);
       
     } catch (error) {
@@ -206,18 +209,25 @@ export function EnhancedStreamingInterface({
   };
 
   const startStreamingSimulation = (tasks: StreamingTask[]) => {
+    console.log('🎯 startStreamingSimulation called - ViewingMode:', isViewingMode, 'Tasks:', tasks.length);
     // Don't start streaming in viewing mode
-    if (isViewingMode) return;
+    if (isViewingMode) {
+      console.log('⏸️ Skipping streaming - in viewing mode');
+      return;
+    }
     
     let currentTaskIndex = 0;
 
     const processNextTask = async () => {
+      console.log(`🔄 Processing task ${currentTaskIndex}/${tasks.length}`);
       if (currentTaskIndex >= tasks.length) {
+        console.log('✅ All tasks completed, finishing streaming');
         await completeStreaming();
         return;
       }
 
       const task = tasks[currentTaskIndex];
+      console.log(`🎯 Starting task: ${task.title}`);
       
       // Start task
       task.status = 'active';
@@ -233,6 +243,7 @@ export function EnhancedStreamingInterface({
 
       // Generate content for this task
       const content = generateTaskContent(task, prompt, dbType);
+      console.log(`📝 Generated content for ${task.title} - Length: ${content.length}`);
       
       // Stream content character by character
       let contentIndex = 0;
