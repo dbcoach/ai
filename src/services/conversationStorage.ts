@@ -52,6 +52,7 @@ export class LocalStorageConversations implements ConversationStorage {
   async saveConversation(conversation: SavedConversation): Promise<void> {
     try {
       const conversations = await this.loadConversations();
+      console.log('Before save - existing conversations:', conversations.length);
       
       // Remove any existing conversation with same ID
       const filtered = conversations.filter(c => c.id !== conversation.id);
@@ -63,26 +64,37 @@ export class LocalStorageConversations implements ConversationStorage {
       const limited = filtered.slice(0, this.MAX_CONVERSATIONS);
       
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(limited));
-      console.log(`Saved conversation: ${conversation.title}`);
+      console.log(`✅ Saved conversation: "${conversation.title}" (Total: ${limited.length})`);
+      console.log('Conversation data:', conversation);
     } catch (error) {
-      console.error('Error saving conversation to localStorage:', error);
+      console.error('❌ Error saving conversation to localStorage:', error);
       throw new Error('Failed to save conversation');
     }
   }
 
   async loadConversations(userId?: string): Promise<SavedConversation[]> {
     try {
+      console.log('🔍 Loading conversations from localStorage...');
       const stored = localStorage.getItem(this.STORAGE_KEY);
-      if (!stored) return [];
+      console.log('📦 Raw localStorage data:', stored ? 'Found data' : 'No data found');
+      
+      if (!stored) {
+        console.log('❌ No conversations stored in localStorage');
+        return [];
+      }
       
       const conversations = JSON.parse(stored) as SavedConversation[];
+      console.log('📊 Parsed conversations:', conversations.length, conversations);
       
       // Filter by userId if provided (for future multi-user support)
-      return userId 
+      const filtered = userId 
         ? conversations.filter(c => c.userId === userId)
         : conversations;
+      
+      console.log('✅ Returning filtered conversations:', filtered.length, filtered);
+      return filtered;
     } catch (error) {
-      console.error('Error loading conversations from localStorage:', error);
+      console.error('❌ Error loading conversations from localStorage:', error);
       return [];
     }
   }

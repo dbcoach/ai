@@ -278,7 +278,9 @@ export function EnhancedStreamingInterface({
       };
 
       // Save to localStorage
+      console.log('🔵 About to save conversation:', conversation);
       await conversationStorage.saveConversation(conversation);
+      console.log('✅ Conversation saved successfully!');
 
       setSaveStatus('saved');
       setTotalProgress(100);

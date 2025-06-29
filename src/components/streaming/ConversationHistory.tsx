@@ -54,7 +54,8 @@ export function ConversationHistory({
   const loadConversations = async () => {
     try {
       setLoading(true);
-      const sessions = await conversationStorage.loadConversations(user?.id);
+      // Temporarily load all conversations (no user filtering) for debugging
+      const sessions = await conversationStorage.loadConversations();
       console.log('Loaded conversations:', sessions.length, sessions);
       setConversations(sessions);
     } catch (error) {
@@ -207,7 +208,7 @@ export function ConversationHistory({
                     <div className="flex items-center gap-4 text-xs text-slate-500">
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        <span>{formatDate(conversation.created_at)}</span>
+                        <span>{formatDate(conversation.createdAt)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Database className="w-3 h-3" />

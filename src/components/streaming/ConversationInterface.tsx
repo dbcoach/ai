@@ -41,8 +41,8 @@ export function ConversationInterface() {
   };
 
   const handleNewGeneration = () => {
-    // Navigate to streaming page for new generation
-    window.location.href = '/';
+    // Navigate to home page for new generation
+    window.location.href = window.location.origin + '/';
   };
 
   const handleSelectConversation = (sessionId: string) => {
@@ -126,7 +126,7 @@ export function ConversationInterface() {
                         <div className="flex items-center gap-3 text-sm text-slate-400">
                           <span>{selectedConversation.dbType}</span>
                           <span>•</span>
-                          <span>{new Date(selectedConversation.created_at).toLocaleDateString()}</span>
+                          <span>{new Date(selectedConversation.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
                       <button
