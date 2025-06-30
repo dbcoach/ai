@@ -15,6 +15,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useDemo } from '../../contexts/DemoContext';
+import { BoltNewBadge } from '../ui/BoltNewBadge';
 
 export function DemoLandingPage() {
   const navigate = useNavigate();
@@ -276,6 +277,9 @@ export function DemoLandingPage() {
           </div>
         </div>
       </div>
+      
+      {/* Bolt.new Badge */}
+      <BoltNewBadge />
     </div>
   );
 }
