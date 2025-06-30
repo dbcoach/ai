@@ -13,7 +13,7 @@ export function BoltNewBadge() {
         <img
           src="/images/bolt_badge.png"
           alt="Built with Bolt.new"
-          className="w-8 h-auto sm:w-10 md:w-12 lg:w-14 max-w-none rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+          className="w-12 h-auto sm:w-16 md:w-20 lg:w-24 max-w-none rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
         />
       </a>
     </div>
