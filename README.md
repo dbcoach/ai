@@ -10,7 +10,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?logo=vite)](https://vitejs.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[🚀 **Live Demo**](https://demo.dbcoach.ai) • [📖 **Documentation**](https://docs.dbcoach.ai) • [💬 **Discord Community**](https://discord.gg/dbcoach)
+[🚀 **Live Demo**](https://db.coach) • [📖 **Documentation**](https://db.coach) • [💬 **GitHub**](https://github.com/dbcoach)
 
 </div>
 
@@ -22,9 +22,9 @@ DB.Coach is a revolutionary **AI-powered database design platform** that transfo
 
 ### 🎥 **See it in Action**
 
-![DB.Coach Demo](https://via.placeholder.com/800x400/1e293b/white?text=DB.Coach+Live+Streaming+Demo)
+[**DB Coach Demo**](https://db.coach) 
 
-*Watch AI agents collaborate in real-time to design your database schema, generate SQL, and provide expert guidance through our innovative Bolt.new-style interface.*
+*Watch AI agents collaborate in real-time to design your database schema, generate SQL, and provide expert guidance through our innovative style interface.*
 
 ---
 
@@ -38,7 +38,7 @@ DB.Coach is a revolutionary **AI-powered database design platform** that transfo
 - **✅ Quality Assurance**: Validates designs with zero tolerance for critical issues
 
 ### 🎬 **Live Streaming Interface** *(NEW)*
-Experience database design like never before with our **Bolt.new-inspired** real-time interface:
+Experience database design like never before with our **AI Agent-inspired** real-time interface:
 
 - **👀 Watch AI Agents Think**: See the reasoning process behind every design decision
 - **📊 Real-time Progress**: Live updates as your database schema is being generated
@@ -94,7 +94,7 @@ with GDPR compliance."
 ```
 
 ### 2️⃣ **Watch AI Agents Collaborate** 
-![AI Agents Working](https://via.placeholder.com/600x200/374151/white?text=Requirements+Analyst+→+Schema+Architect+→+Security+Auditor)
+![AI Agents Working](https://www.youtube.com/watch?v=QZsMciAv_Lw)
 
 ### 3️⃣ **Real-time Streaming Generation**
 - 👀 **Left Panel**: Watch AI reasoning and decision-making process
@@ -275,19 +275,19 @@ Watch your database come to life:
 ## 🎨 **Screenshots**
 
 ### **🏠 Landing Page**
-![Landing Page](https://via.placeholder.com/800x500/1e293b/white?text=Modern+Landing+Page+with+Mode+Selection)
+![Landing Page](https://db.coach)
 *Choose between Standard and Pro modes, select database type, and describe your requirements*
 
 ### **🎬 Live Streaming Interface**
-![Streaming Interface](https://via.placeholder.com/800x500/1e293b/white?text=Three-Panel+Streaming+Interface+with+AI+Chat)
+![Streaming Interface](https://db.coach)
 *Watch AI agents work in real-time while chatting about your database design*
 
 ### **📚 Conversation History**
-![Conversation History](https://via.placeholder.com/800x500/1e293b/white?text=Searchable+Database+Generation+History)
+![Conversation History](https://db.coach)
 *Browse, search, and continue working on previous database designs*
 
 ### **💬 Intelligent Chat**
-![AI Chat](https://via.placeholder.com/800x500/1e293b/white?text=Context-Aware+AI+Assistant+Chat)
+![AI Chat](https://db.coach)
 *Get specific answers about your database schema, performance, and implementation*
 
 ---
@@ -342,25 +342,25 @@ npm run type-check # TypeScript checking
 
 ## 🎯 **Roadmap**
 
-### **Q1 2024 - Enhanced AI**
-- [ ] GPT-4 integration for even smarter designs
+### **Q2 2025 - Enhanced AI**
+- [ ] LLM integration for even smarter designs
 - [ ] Custom business rules and constraints
 - [ ] Advanced performance profiling
 - [ ] Multi-language schema generation
 
-### **Q2 2024 - Collaboration**  
+### **Q3 2025 - Collaboration**  
 - [ ] Team workspaces and sharing
 - [ ] Real-time collaborative editing
 - [ ] Comment system and reviews
 - [ ] Integration with GitHub/GitLab
 
-### **Q3 2024 - Enterprise**
+### **Q4 2025 - Enterprise**
 - [ ] SSO and enterprise authentication  
 - [ ] Advanced role-based permissions
 - [ ] Audit logs and compliance reporting
 - [ ] On-premises deployment options
 
-### **Q4 2024 - Advanced Features**
+### **Q1 2026 - Advanced Features**
 - [ ] Visual schema editor with drag & drop
 - [ ] Database migrations and versioning
 - [ ] Performance monitoring integration
@@ -375,7 +375,7 @@ We love contributions! Here's how to get started:
 ### **Development Setup**
 ```bash
 # Fork and clone the repo
-git clone https://github.com/your-username/ai.git
+git clone https://github.com/dbcoach/ai.git
 cd ai
 
 # Install dependencies
@@ -419,11 +419,11 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ### **Ready to Transform Your Database Design Process?**
 
-**[🚀 Try DB.Coach Now](https://dbcoach.ai)** • **[📖 Read the Docs](https://docs.dbcoach.ai)** • **[💬 Join Discord](https://discord.gg/dbcoach)**
+**[🚀 Try DB.Coach Now](https://dbcoach.ai)** • **[📖 Read the Docs](https://dbcoach.ai)** • **[💬 Contribute to **GitHub**](https://github.com/dbcoach)**
 
 ---
 
-**Built with ❤️ by the DB.Coach Team**
+**Built with ❤️ by DB.Coach**
 
 *Making database design accessible to everyone, one schema at a time.*
 
