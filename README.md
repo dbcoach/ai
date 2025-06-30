@@ -22,7 +22,7 @@ DB.Coach is a revolutionary **AI-powered database design platform** that transfo
 
 ### 🎥 **See it in Action**
 
-[DB.Coach Demo](https://db.coach)
+[**DB Coach Demo**](https://db.coach) 
 
 *Watch AI agents collaborate in real-time to design your database schema, generate SQL, and provide expert guidance through our innovative style interface.*
 
