@@ -8,8 +8,12 @@ import { LiveStreamingPage } from './components/streaming/LiveStreamingPage';
 import { StreamingCanvasPage } from './components/streaming/StreamingCanvasPage';
 import { ConversationInterface } from './components/streaming/ConversationInterface';
 import { UnifiedProjectWorkspace } from './components/projects/UnifiedProjectWorkspace';
+import { DemoLandingPage } from './components/demo/DemoLandingPage';
+import { DemoLiveGeneration } from './components/demo/DemoLiveGeneration';
+import { DemoConversationInterface } from './components/demo/DemoConversationInterface';
 import { GenerationProvider } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { DemoProvider } from './contexts/DemoContext';
 import { AuthErrorHandler } from './components/auth/AuthErrorHandler';
 import { AuthDebugPanel } from './components/debug/AuthDebugPanel';
 
@@ -27,6 +31,13 @@ function AppContent() {
         <Route path="/streaming-legacy" element={<LiveStreamingPage />} />
         <Route path="/unified-workspace" element={<UnifiedProjectWorkspace />} />
         <Route path="/settings/*" element={<Settings />} />
+        
+        {/* Demo Routes */}
+        <Route path="/demo" element={<DemoLandingPage />} />
+        <Route path="/demo/live-generation" element={<DemoLiveGeneration />} />
+        <Route path="/demo/conversations" element={<DemoConversationInterface />} />
+        <Route path="/demo/streaming-chat" element={<DemoLiveGeneration />} />
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <AuthDebugPanel />
@@ -39,9 +50,11 @@ function App() {
     <AuthProvider>
       <AuthErrorHandler>
         <Router>
-          <GenerationProvider>
-            <AppContent />
-          </GenerationProvider>
+          <DemoProvider>
+            <GenerationProvider>
+              <AppContent />
+            </GenerationProvider>
+          </DemoProvider>
         </Router>
       </AuthErrorHandler>
     </AuthProvider>

@@ -83,6 +83,15 @@ const LandingPage: React.FC = () => {
         
         {/* Navigation Menu */}
         <div className="flex items-center space-x-6">
+          {/* Demo Button - Always visible */}
+          <Link 
+            to="/demo" 
+            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 hover:from-purple-600/30 hover:to-blue-600/30 text-purple-300 hover:text-purple-200 rounded-lg transition-colors backdrop-blur-sm border border-purple-500/30"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Live Demo</span>
+          </Link>
+          
           {user && (
             <>
               <Link 
@@ -270,6 +279,30 @@ const LandingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Demo CTA - Only show when not signed in */}
+              {!user && (
+                <div className="mt-6 p-6 bg-gradient-to-r from-purple-600/10 via-blue-600/10 to-purple-600/10 rounded-xl border border-purple-500/30">
+                  <div className="text-center">
+                    <div className="inline-flex items-center space-x-2 px-3 py-1 bg-purple-600/20 text-purple-300 rounded-full text-sm font-medium mb-4">
+                      <Sparkles className="w-4 h-4" />
+                      <span>Try Before You Sign Up</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Experience the Vibe DB Revolution</h3>
+                    <p className="text-slate-300 mb-4">
+                      Watch AI agents collaborate in real-time • Chat with intelligent assistants • No signup required
+                    </p>
+                    <Link
+                      to="/demo"
+                      className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all duration-200 transform hover:scale-105"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      <span>Launch Interactive Demo</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
