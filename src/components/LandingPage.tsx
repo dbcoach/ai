@@ -102,13 +102,6 @@ const LandingPage: React.FC = () => {
                 <span>Generations</span>
               </Link>
               <Link 
-                to="/projects" 
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700/50"
-              >
-                <Database className="w-4 h-4" />
-                <span>My Projects</span>
-              </Link>
-              <Link 
                 to="/settings" 
                 className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700/50"
               >
