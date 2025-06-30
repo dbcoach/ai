@@ -15,7 +15,6 @@ import { GenerationProvider } from './context/GenerationContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { DemoProvider } from './contexts/DemoContext';
 import { AuthErrorHandler } from './components/auth/AuthErrorHandler';
-import { AuthDebugPanel } from './components/debug/AuthDebugPanel';
 
 function AppContent() {
   return (
@@ -40,7 +39,6 @@ function AppContent() {
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <AuthDebugPanel />
     </div>
   );
 }
