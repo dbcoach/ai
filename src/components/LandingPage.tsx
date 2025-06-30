@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Zap, ArrowRight, Bot, Sparkles, Settings, MessageSquare } from 'lucide-react';
+import { Database, Zap, ArrowRight, Bot, Sparkles, Settings, MessageSquare, Play } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DBCoachMode } from '../context/GenerationContext';
 import AuthButton from './auth/AuthButton';
 import { useAuth } from '../contexts/AuthContext';
 import useGeneration from '../hooks/useGeneration';
 import { BoltNewBadge } from './ui/BoltNewBadge';
+import { VideoIntroModal } from './VideoIntroModal';
 
 const LandingPage: React.FC = () => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const LandingPage: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [isBrandHovered, setIsBrandHovered] = useState(false);
   const [showInitialGlow, setShowInitialGlow] = useState(true);
+  const [showVideoModal, setShowVideoModal] = useState(false);
 
   useEffect(() => {
     // Hide the initial glow after animation completes
@@ -84,6 +86,15 @@ const LandingPage: React.FC = () => {
         
         {/* Navigation Menu */}
         <div className="flex items-center space-x-6">
+          {/* Watch Intro Button - NEW */}
+          <button 
+            onClick={() => setShowVideoModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 hover:text-blue-200 rounded-lg transition-colors backdrop-blur-sm border border-blue-500/30"
+          >
+            <Play className="w-4 h-4" />
+            <span>Watch Intro</span>
+          </button>
+          
           {/* Demo Button - Always visible */}
           <Link 
             to="/demo" 
@@ -307,6 +318,12 @@ const LandingPage: React.FC = () => {
 
       {/* Bolt.new Badge */}
       <BoltNewBadge />
+
+      {/* Video Introduction Modal */}
+      <VideoIntroModal
+        isOpen={showVideoModal}
+        onClose={() => setShowVideoModal(false)}
+      />
 
       {/* Custom CSS for flowing border animation */}
       <style jsx>{`
