@@ -5,6 +5,7 @@ import { DBCoachMode } from '../context/GenerationContext';
 import AuthButton from './auth/AuthButton';
 import { useAuth } from '../contexts/AuthContext';
 import useGeneration from '../hooks/useGeneration';
+import { BoltNewBadge } from './ui/BoltNewBadge';
 
 const LandingPage: React.FC = () => {
   const { user } = useAuth();
@@ -303,6 +304,9 @@ const LandingPage: React.FC = () => {
 
       {/* Bottom spacing */}
       <div className="h-12"></div>
+
+      {/* Bolt.new Badge */}
+      <BoltNewBadge />
 
       {/* Custom CSS for flowing border animation */}
       <style jsx>{`
