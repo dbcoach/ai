@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, Play, ExternalLink } from 'lucide-react';
 
 interface VideoIntroModalProps {
   isOpen: boolean;
@@ -9,6 +9,8 @@ interface VideoIntroModalProps {
 
 export function VideoIntroModal({ isOpen, onClose }: VideoIntroModalProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [showVideo, setShowVideo] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   // Handle ESC key
   useEffect(() => {
@@ -22,25 +24,30 @@ export function VideoIntroModal({ isOpen, onClose }: VideoIntroModalProps) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  // YouTube video ID extracted from the provided URL
+  // YouTube video ID and URLs
   const youtubeVideoId = 'Ak7HrkdkHVE';
-  
-  // YouTube embed URL with proper parameters for embedding
-  const youtubeEmbedUrl = `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&fs=1&iv_load_policy=3&playsinline=1`;
+  const youtubeWatchUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+  const youtubeEmbedUrl = `https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1&controls=1&fs=1&playsinline=1`;
 
-  // Stop video when modal closes by reloading the iframe
+  // Reset state when modal opens/closes
   useEffect(() => {
-    if (!isOpen && iframeRef.current) {
-      // Reset the iframe src to stop the video
-      const currentSrc = iframeRef.current.src;
-      iframeRef.current.src = '';
-      setTimeout(() => {
-        if (iframeRef.current) {
-          iframeRef.current.src = currentSrc;
-        }
-      }, 100);
+    if (isOpen) {
+      setShowVideo(false);
+      setHasError(false);
     }
   }, [isOpen]);
+
+  const handlePlayVideo = () => {
+    setShowVideo(true);
+  };
+
+  const handleIframeError = () => {
+    setHasError(true);
+  };
+
+  const openYouTube = () => {
+    window.open(youtubeWatchUrl, '_blank', 'noopener,noreferrer');
+  };
 
   if (!isOpen) return null;
 
@@ -74,19 +81,63 @@ export function VideoIntroModal({ isOpen, onClose }: VideoIntroModalProps) {
 
           {/* YouTube Video Player */}
           <div className="relative aspect-video bg-black">
-            <iframe
-              ref={iframeRef}
-              className="w-full h-full"
-              src={isOpen ? youtubeEmbedUrl : ''}
-              title="DB.Coach Introduction Video"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              style={{
-                border: 'none',
-                borderRadius: '0'
-              }}
-            />
+            {!showVideo && !hasError ? (
+              /* Video Thumbnail with Play Button */
+              <div className="relative w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                {/* YouTube Thumbnail Background */}
+                <div 
+                  className="absolute inset-0 bg-cover bg-center opacity-60"
+                  style={{
+                    backgroundImage: `url(https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg)`
+                  }}
+                />
+                
+                {/* Play Button Overlay */}
+                <div className="relative z-10 flex flex-col items-center space-y-4">
+                  <button
+                    onClick={handlePlayVideo}
+                    className="w-20 h-20 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-2xl"
+                    aria-label="Play video"
+                  >
+                    <Play className="w-8 h-8 text-white ml-1" />
+                  </button>
+                  <p className="text-white text-sm font-medium">Click to play video</p>
+                </div>
+              </div>
+            ) : hasError ? (
+              /* Error Fallback */
+              <div className="w-full h-full bg-slate-800 flex flex-col items-center justify-center space-y-4 p-8">
+                <div className="text-center">
+                  <h3 className="text-white font-semibold mb-2">Unable to load video</h3>
+                  <p className="text-slate-300 text-sm mb-4">
+                    The video couldn't be embedded. You can watch it directly on YouTube.
+                  </p>
+                  <button
+                    onClick={openYouTube}
+                    className="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Watch on YouTube</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Embedded Video */
+              <iframe
+                ref={iframeRef}
+                className="w-full h-full"
+                src={youtubeEmbedUrl}
+                title="DB.Coach Introduction Video"
+                frameBorder="0"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                onError={handleIframeError}
+                style={{
+                  border: 'none',
+                  borderRadius: '0'
+                }}
+              />
+            )}
           </div>
 
           {/* Footer */}
