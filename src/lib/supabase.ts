@@ -35,29 +35,70 @@ export const handleAuthError = async (error: any): Promise<boolean> => {
   if (!error) return false;
   
   const errorMessage = error.message || error.toString();
+  const errorStatus = error.status || error.code;
   
-  // Handle refresh token errors
+  // Handle refresh token errors - be more comprehensive
   if (errorMessage.includes('refresh_token_not_found') ||
       errorMessage.includes('Invalid Refresh Token') ||
       errorMessage.includes('refresh_token_expired') ||
-      errorMessage.includes('JWT expired')) {
+      errorMessage.includes('JWT expired') ||
+      errorMessage.includes('Authentication required') ||
+      errorStatus === 400) {
     
-    console.log('Handling expired/invalid refresh token, clearing session...');
+    console.log('Handling auth error:', errorMessage, 'Status:', errorStatus);
     
     try {
-      // Import the utility function dynamically to avoid circular imports
-      const { clearAuthSession } = await import('../utils/authUtils');
-      await clearAuthSession();
+      // Clear session immediately
+      await supabase.auth.signOut();
+      
+      // Clear all auth-related storage
+      const authKeys = ['supabase.auth.token', 'rememberMe', 'lastAuthError'];
+      authKeys.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {
+          console.warn('Could not remove localStorage key:', key);
+        }
+      });
+      
+      // Clear any Supabase-related localStorage items
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('supabase.')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.warn('Could not clear supabase localStorage items');
+      }
+      
+      // Clear sessionStorage as well
+      try {
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.startsWith('supabase.')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.warn('Could not clear supabase sessionStorage items');
+      }
+      
+      console.log('Auth session cleared successfully');
+      
+      // Don't redirect immediately - let the auth context handle it
       return true; // Handled
+      
     } catch (clearError) {
       console.error('Error during session clearing:', clearError);
       
       // Fallback: manual cleanup
       try {
-        await supabase.auth.signOut();
         localStorage.clear();
         sessionStorage.clear();
-        window.location.href = '/';
+        // Force reload only as last resort
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
       } catch (fallbackError) {
         console.error('Fallback cleanup failed:', fallbackError);
       }
@@ -73,6 +114,25 @@ if (import.meta.env.DEV) {
     console.log('Auth event:', event, session?.user?.email);
   });
 }
+
+// Global error handler for unhandled auth errors
+window.addEventListener('unhandledrejection', async (event) => {
+  const error = event.reason;
+  if (error && typeof error === 'object') {
+    const isAuthError = error.message?.includes('refresh_token') ||
+                       error.message?.includes('Invalid Refresh Token') ||
+                       error.message?.includes('JWT expired') ||
+                       error.status === 400;
+    
+    if (isAuthError) {
+      console.log('Caught unhandled auth error:', error);
+      const handled = await handleAuthError(error);
+      if (handled) {
+        event.preventDefault(); // Prevent the error from being logged to console
+      }
+    }
+  }
+});
 
 // Global error handler for Supabase requests
 const originalRequest = supabase.auth.getUser;

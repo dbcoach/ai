@@ -46,15 +46,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           console.error('Error getting session:', error);
           
-          // Handle specific auth errors
+          // Handle specific auth errors - be more comprehensive
           if (error.message?.includes('refresh_token_not_found') || 
-              error.message?.includes('Invalid Refresh Token')) {
-            console.log('Refresh token invalid, clearing session');
-            // Clear any stale tokens and force sign out
-            await supabase.auth.signOut();
-            setSession(null);
-            setUser(null);
-            setError(null); // Don't show error to user for expired tokens
+              error.message?.includes('Invalid Refresh Token') ||
+              error.message?.includes('refresh_token_expired') ||
+              error.message?.includes('JWT expired') ||
+              error.status === 400) {
+            console.log('Auth token invalid, clearing session and storage');
+            
+            try {
+              // Clear any stale tokens and force sign out
+              await supabase.auth.signOut();
+              
+              // Clear all auth-related storage
+              const authKeys = ['supabase.auth.token', 'rememberMe', 'lastAuthError'];
+              authKeys.forEach(key => localStorage.removeItem(key));
+              
+              // Clear any Supabase-related localStorage items
+              Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('supabase.')) {
+                  localStorage.removeItem(key);
+                }
+              });
+              
+              setSession(null);
+              setUser(null);
+              setError(null); // Don't show error to user for expired tokens
+              
+              console.log('Session cleared successfully');
+            } catch (clearError) {
+              console.error('Error clearing session:', clearError);
+              // Force reload as fallback
+              window.location.reload();
+            }
           } else {
             setError(error.message);
           }
@@ -67,12 +91,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // If there's a network or parsing error, try to clear session
         if (err instanceof Error && 
-            (err.message.includes('refresh_token') || err.message.includes('Invalid'))) {
+            (err.message.includes('refresh_token') || 
+             err.message.includes('Invalid') ||
+             err.message.includes('JWT') ||
+             err.message.includes('Authentication'))) {
           console.log('Clearing invalid session due to error:', err.message);
-          await supabase.auth.signOut();
-          setSession(null);
-          setUser(null);
-          setError(null);
+          
+          try {
+            await supabase.auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+            setSession(null);
+            setUser(null);
+            setError(null);
+          } catch (clearError) {
+            console.error('Error during cleanup:', clearError);
+            // Force reload as last resort
+            window.location.reload();
+          }
         } else {
           setError('An unexpected error occurred');
         }
@@ -109,6 +145,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem('rememberMe');
             // Clear any potential stale tokens
             localStorage.removeItem('supabase.auth.token');
+            // Clear any Supabase-related localStorage items
+            Object.keys(localStorage).forEach(key => {
+              if (key.startsWith('supabase.')) {
+                localStorage.removeItem(key);
+              }
+            });
             break;
           case 'TOKEN_REFRESHED':
             console.log('Token refreshed successfully');
