@@ -25,8 +25,8 @@ export function VideoIntroModal({ isOpen, onClose }: VideoIntroModalProps) {
   // YouTube video ID extracted from the provided URL
   const youtubeVideoId = 'Ak7HrkdkHVE';
   
-  // YouTube embed URL with autoplay and other parameters
-  const youtubeEmbedUrl = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1&enablejsapi=1&origin=${window.location.origin}`;
+  // YouTube embed URL with proper parameters for embedding
+  const youtubeEmbedUrl = `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&fs=1&iv_load_policy=3&playsinline=1`;
 
   // Stop video when modal closes by reloading the iframe
   useEffect(() => {
