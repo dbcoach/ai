@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Play, Volume2, VolumeX } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface VideoIntroModalProps {
   isOpen: boolean;
@@ -8,29 +8,7 @@ interface VideoIntroModalProps {
 }
 
 export function VideoIntroModal({ isOpen, onClose }: VideoIntroModalProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = React.useState(false);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-
-  // Auto-play when modal opens
-  useEffect(() => {
-    if (isOpen && videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(error => {
-        console.log('Auto-play prevented:', error);
-      });
-    }
-  }, [isOpen]);
-
-  // Pause video when modal closes
-  useEffect(() => {
-    if (!isOpen && videoRef.current) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  }, [isOpen]);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Handle ESC key
   useEffect(() => {
@@ -44,28 +22,25 @@ export function VideoIntroModal({ isOpen, onClose }: VideoIntroModalProps) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        videoRef.current.play();
-        setIsPlaying(true);
-      }
-    }
-  };
+  // YouTube video ID extracted from the provided URL
+  const youtubeVideoId = 'Ak7HrkdkHVE';
+  
+  // YouTube embed URL with autoplay and other parameters
+  const youtubeEmbedUrl = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1&enablejsapi=1&origin=${window.location.origin}`;
 
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
+  // Stop video when modal closes by reloading the iframe
+  useEffect(() => {
+    if (!isOpen && iframeRef.current) {
+      // Reset the iframe src to stop the video
+      const currentSrc = iframeRef.current.src;
+      iframeRef.current.src = '';
+      setTimeout(() => {
+        if (iframeRef.current) {
+          iframeRef.current.src = currentSrc;
+        }
+      }, 100);
     }
-  };
-
-  const handleVideoClick = () => {
-    togglePlayPause();
-  };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -97,62 +72,21 @@ export function VideoIntroModal({ isOpen, onClose }: VideoIntroModalProps) {
             </button>
           </div>
 
-          {/* Video Player */}
+          {/* YouTube Video Player */}
           <div className="relative aspect-video bg-black">
-            <video
-              ref={videoRef}
-              className="w-full h-full cursor-pointer"
-              onClick={handleVideoClick}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onEnded={() => setIsPlaying(false)}
-              muted={isMuted}
-              playsInline
-              preload="metadata"
-            >
-              <source src="/videos/dbcoach_intro.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-
-            {/* Video Overlay Controls */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
-              
-              {/* Center Play Button (when paused) */}
-              {!isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <button
-                    onClick={togglePlayPause}
-                    className="w-16 h-16 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200 hover:scale-110"
-                  >
-                    <Play className="w-8 h-8 text-white ml-1" />
-                  </button>
-                </div>
-              )}
-
-              {/* Bottom Controls */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-between">
-                <button
-                  onClick={togglePlayPause}
-                  className="p-2 bg-black/50 hover:bg-black/70 rounded-lg transition-colors text-white"
-                >
-                  {isPlaying ? (
-                    <div className="w-4 h-4 flex space-x-1">
-                      <div className="w-1.5 h-4 bg-white rounded"></div>
-                      <div className="w-1.5 h-4 bg-white rounded"></div>
-                    </div>
-                  ) : (
-                    <Play className="w-4 h-4" />
-                  )}
-                </button>
-
-                <button
-                  onClick={toggleMute}
-                  className="p-2 bg-black/50 hover:bg-black/70 rounded-lg transition-colors text-white"
-                >
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+            <iframe
+              ref={iframeRef}
+              className="w-full h-full"
+              src={isOpen ? youtubeEmbedUrl : ''}
+              title="DB.Coach Introduction Video"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              style={{
+                border: 'none',
+                borderRadius: '0'
+              }}
+            />
           </div>
 
           {/* Footer */}
